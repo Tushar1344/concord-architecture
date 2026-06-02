@@ -644,6 +644,66 @@
     display: block;
   }
 
+  /* Worked-example chips — for surfacing live example links in §1 */
+  .example-chips {
+    margin: 22px 0 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .example-chips-label {
+    align-self: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    margin-right: 4px;
+  }
+  .example-chip {
+    flex: 1 1 240px;
+    min-width: 200px;
+    padding: 12px 16px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    text-decoration: none !important;
+    color: var(--ink);
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+    display: block;
+  }
+  .example-chip:hover {
+    border-color: var(--coral);
+    background: var(--coral-bg);
+    transform: translateY(-1px);
+    color: var(--ink);
+  }
+  .example-chip-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .example-chip-name .arrow {
+    color: var(--coral);
+    font-weight: 400;
+    opacity: 0.6;
+    transition: opacity 0.15s ease;
+  }
+  .example-chip:hover .example-chip-name .arrow { opacity: 1; }
+  .example-chip-tags {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
   /* Pill grid */
   .pill-grid {
     display: grid;
@@ -1360,6 +1420,22 @@
 <div class="callout tip">
   <div class="callout-label">Positioning</div>
   <p>For a longer-form treatment of what Concord <em>is</em> and what it <em>isn't</em> — including a comparison across durable runtimes, agent frameworks, BPM platforms, DevOps systems, policy engines, data DAG orchestrators, observability tools, iPaaS, and memory systems — see <a href="what-concord-is.html" target="_blank" rel="noopener">What Concord is &amp; isn't ↗</a>.</p>
+</div>
+
+<div class="example-chips">
+  <span class="example-chips-label">Try a worked example</span>
+  <a class="example-chip" href="examples/vendor-data-sync.html" target="_blank" rel="noopener">
+    <div class="example-chip-name">vendor-data-sync<span class="arrow">↗</span></div>
+    <div class="example-chip-tags">scheduled · deterministic · retry taxonomy</div>
+  </a>
+  <a class="example-chip" href="examples/hotel-booking.html" target="_blank" rel="noopener">
+    <div class="example-chip-name">hotel-booking<span class="arrow">↗</span></div>
+    <div class="example-chip-tags">approval-gated · compensation · idempotency</div>
+  </a>
+  <a class="example-chip" href="examples/revenue-investigation-swarm.html" target="_blank" rel="noopener">
+    <div class="example-chip-name">revenue-investigation-swarm<span class="arrow">↗</span></div>
+    <div class="example-chip-tags">agentic · swarm · governed tools</div>
+  </a>
 </div>
 
 <p>The core idea is simple:</p>
