@@ -8751,7 +8751,7 @@ flowchart LR
     }
 
     function setActivePart(part, { scroll = false } = {}) {
-      if (!['1', '2', '3'].includes(part)) part = '1';
+      if (!['1', '2', '3', '4'].includes(part)) part = '1';
       body.setAttribute('data-active-part', part);
       tabs.forEach(t => {
         const isActive = t.dataset.part === part;
@@ -8887,7 +8887,7 @@ flowchart LR
         e.preventDefault();
       } else if (e.key === 't' || e.key === 'T') {
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else if (!e.altKey && !e.ctrlKey && !e.metaKey && (e.key === '1' || e.key === '2' || e.key === '3')) {
+      } else if (!e.altKey && !e.ctrlKey && !e.metaKey && (e.key === '1' || e.key === '2' || e.key === '3' || e.key === '4')) {
         setActivePart(e.key, { scroll: true });
       }
     });
