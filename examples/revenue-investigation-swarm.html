@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Revenue anomaly investigation swarm · Concord design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'Inter, sans-serif',
+      primaryColor: '#FAF8F2',
+      primaryTextColor: '#141413',
+      primaryBorderColor: '#D97757',
+      lineColor: '#8A8478',
+      background: '#F0EEE6',
+      mainBkg: '#FAF8F2',
+      nodeTextColor: '#141413',
+      textColor: '#141413',
+      noteBkgColor: '#F5E9DC',
+      noteBorderColor: '#D97757',
+      actorBkg: '#FAF8F2',
+      actorBorder: '#D97757',
+      actorTextColor: '#141413',
+    },
+    flowchart: { curve: 'basis', padding: 18, useMaxWidth: true },
+    sequence: { actorMargin: 50, boxMargin: 10, useMaxWidth: true },
+  });
+</script>
+<style>
+  :root {
+    --paper: #F0EEE6; --panel: #FAF8F2; --ink: #141413; --ink-soft: #2C2A28;
+    --muted: #5D5A52; --muted-2: #8A8478; --line: #DDD8CC;
+    --coral: #D97757; --coral-deep: #B85F40; --coral-bg: #FAEEE3;
+    --sage: #6B7B5A; --plum: #7A5560; --code-bg: #F8F5EC; --inline-code: #F0EAD9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 56px 56px 120px; max-width: 980px; margin-inline: auto;
+    font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.7;
+    color: var(--ink); background: var(--paper);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  header.hero { margin-bottom: 56px; padding-bottom: 32px; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--coral); margin-bottom: 18px;
+  }
+  .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--coral); }
+  h1 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 56px; font-weight: 400;
+    line-height: 1.05; letter-spacing: -0.025em; margin: 0 0 16px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 19px; line-height: 1.55;
+    color: var(--muted); margin: 0 0 22px; max-width: 640px;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 22px; font-size: 13px; color: var(--muted); }
+  .meta strong {
+    display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted-2); margin-bottom: 3px;
+  }
+  .meta span > b { color: var(--ink); font-weight: 600; }
+  details.section { border-bottom: 1px solid var(--line); padding: 28px 0; }
+  details.section:last-of-type { border-bottom: none; }
+  summary.section-head { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 14px; padding-right: 40px; position: relative; }
+  summary.section-head::-webkit-details-marker { display: none; }
+  summary.section-head .section-num {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); min-width: 56px;
+  }
+  summary.section-head h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 24px; font-weight: 500;
+    margin: 0; color: var(--ink); letter-spacing: -0.01em; transition: color 0.15s ease;
+  }
+  summary.section-head:hover h2 { color: var(--coral-deep); }
+  summary.section-head .chev {
+    position: absolute; right: 4px; top: 50%; width: 10px; height: 10px;
+    border-right: 1.5px solid var(--muted-2); border-bottom: 1.5px solid var(--muted-2);
+    transform: translateY(-65%) rotate(45deg); transition: transform 0.25s ease;
+  }
+  details[open] summary.section-head .chev { transform: translateY(-25%) rotate(-135deg); }
+  .body { padding: 14px 0 6px 70px; }
+  .body > :first-child { margin-top: 0; }
+  h3 { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; margin: 24px 0 8px; color: var(--ink); }
+  p { margin: 10px 0; color: var(--ink-soft); }
+  ul, ol { margin: 10px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 4px 0; }
+  ul li::marker, ol li::marker { color: var(--coral); }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; padding: 1px 6px; background: var(--inline-code); border-radius: 3px; }
+  pre { margin: 16px 0; padding: 18px 22px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; font-size: 13px; line-height: 1.65; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  th { font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-2); background: var(--panel); }
+  td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--ink); font-weight: 500; }
+  .pill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 14px 0; }
+  .pill { padding: 7px 11px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .callout { margin: 18px 0; padding: 14px 18px; border-left: 2px solid var(--coral); background: var(--coral-bg); border-radius: 0 4px 4px 0; }
+  .callout.tip { border-left-color: var(--sage); background: #F1F2EC; }
+  .callout.warn { border-left-color: #B68A2E; background: #F7F1E0; }
+  .callout-label { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px; color: var(--coral-deep); }
+  .callout.tip .callout-label { color: var(--sage); }
+  .callout.warn .callout-label { color: #936A1D; }
+  .callout p { margin: 0; color: var(--ink); font-size: 14.5px; }
+  .diagram { margin: 22px 0; padding: 22px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; position: relative; }
+  .diagram-label { position: absolute; top: -9px; left: 18px; background: var(--paper); padding: 0 10px; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); }
+  .mermaid { display: flex; justify-content: center; min-height: 60px; }
+  .mermaid svg { max-width: 100%; height: auto !important; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="eyebrow">Concord design</div>
+  <h1>Revenue anomaly investigation swarm</h1>
+  <p class="lede">A coordinator-led agentic swarm investigates a flagged date range — pulls metrics through governed SQL, retrieves prior incidents, optionally spawns a deeper analyst — and produces one finance-review artifact. Read-only outside; no external sends.</p>
+  <div class="meta">
+    <span><strong>Trigger</strong><b>external_webhook | api_request</b></span>
+    <span><strong>Plan</strong><b>agentic swarm</b></span>
+    <span><strong>Cancellation</strong><b>graceful</b></span>
+    <span><strong>Approvals</strong><b>1</b></span>
+    <span><strong>Side effects</strong><b>0 (read-only)</b></span>
+  </div>
+</header>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">02</span>
+    <h2>User journey</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>An upstream anomaly detector flags a suspicious revenue window and pings this workflow. A coordinator agent investigates, optionally delegates to an analyst sub-agent for deeper root-cause work, and drafts a finance-grade summary artifact. The finance director reviews. On approval, the artifact is marked <code>published</code> in Concord and visible to the finance team in-app. Nothing is emailed or pushed externally.</p>
+    <div class="diagram">
+      <span class="diagram-label">User journey</span>
+      <div class="mermaid">
+flowchart LR
+  Detector([Anomaly detector<br/>flags date range]) --> Webhook[/external_webhook<br/>or api_request/]
+  Webhook --> Coord["Coordinator agent<br/>investigates"]
+  Coord --> Analyst{Deeper analysis<br/>needed?}
+  Analyst -->|yes| Sub["Analyst sub-agent<br/>focused dive"]
+  Analyst -->|no| Draft
+  Sub --> Draft[Draft summary artifact]
+  Draft --> Review[Finance director<br/>human review]
+  Review --> Published([Published artifact<br/>visible to finance team])
+  style Coord fill:#EFE6F0,stroke:#7A5560
+  style Sub fill:#EFE6F0,stroke:#7A5560
+  style Review fill:#F5E0D2,stroke:#D97757
+  style Published fill:#F1F2EC,stroke:#6B7B5A
+      </div>
+    </div>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">03</span>
+    <h2>Trigger / ingress</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Two supported ingress paths, same command type:</p>
+    <ul>
+      <li><code>external_webhook</code> — from the anomaly detector. Payload carries a provider <code>event_id</code>.</li>
+      <li><code>api_request</code> — manual kickoff by a finance analyst via internal UI. Payload carries a UI-generated <code>action_id</code>.</li>
+    </ul>
+    <h3>Idempotency</h3>
+    <p>Ingress-level <code>idempotency_key</code> template:</p>
+    <pre><code>idempotency_key = "revenue_investigation:{ingress}:{event_id_or_action_id}"</code></pre>
+    <h3>Payload schema (key fields)</h3>
+    <table>
+      <thead><tr><th>field</th><th>type</th><th>notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>date_range_start</code></td><td>date</td><td>required; inclusive</td></tr>
+        <tr><td><code>date_range_end</code></td><td>date</td><td>required; inclusive; max 31 days</td></tr>
+        <tr><td><code>metric_scope</code></td><td>enum</td><td><code>gross | net | recognized | bookings</code></td></tr>
+        <tr><td><code>anomaly_score</code></td><td>float</td><td>0-1, from detector; null on manual</td></tr>
+        <tr><td><code>requested_by</code></td><td>user_id</td><td>analyst on manual; <code>system:detector</code> on webhook</td></tr>
+      </tbody>
+    </table>
+    <p>Implicit context: <code>workspace_id</code>, <code>tenant_id</code>, <code>trace_id</code>.</p>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">04</span>
+    <h2>Command(s)</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>One command type, parents the entire swarm.</p>
+    <table>
+      <thead><tr><th>field</th><th>value</th></tr></thead>
+      <tbody>
+        <tr><td><code>command_type</code></td><td><code>investigate_revenue_anomaly</code></td></tr>
+        <tr><td><code>ingress</code></td><td><code>external_webhook</code> | <code>api_request</code></td></tr>
+        <tr><td><code>cancellation_mode</code></td><td><code>graceful</code></td></tr>
+        <tr><td><code>idempotency_key</code></td><td><code>revenue_investigation:{ingress}:{event_id_or_action_id}</code></td></tr>
+        <tr><td><code>status path</code></td><td><code>created → validated → queued → running → succeeded | failed | cancelled | expired</code></td></tr>
+      </tbody>
+    </table>
+    <p>The standard status machine applies. <code>compensated</code> is not reachable: no external writes, so no compensation chain exists.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">05</span>
+    <h2>Policy stack</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Composed at validate time and before each tool call:</p>
+    <div class="pill-grid">
+      <div class="pill">permission</div>
+      <div class="pill">cost</div>
+      <div class="pill">data_safety</div>
+      <div class="pill">connector_scope</div>
+      <div class="pill">agent_risk</div>
+      <div class="pill">memory_consent</div>
+      <div class="pill">approval_requirement</div>
+      <div class="pill">external_sharing</div>
+      <div class="pill">rate_limit</div>
+    </div>
+    <ul>
+      <li><code>permission</code> — only members of <code>finance_investigators</code> or the detector service account can trigger.</li>
+      <li><code>cost</code> — hard cap <code>max_cost_units = 30</code> for the SwarmRun.</li>
+      <li><code>data_safety</code> — SQL tool runs under a row-level-secured view; raw PII columns are denied at the warehouse.</li>
+      <li><code>connector_scope</code> — Snowflake reader role; <code>SELECT</code> only, no <code>INSERT/UPDATE/DELETE</code>.</li>
+      <li><code>agent_risk</code> — <code>max_steps = 20</code> per AgentRun, <code>spawn_depth ≤ 2</code>, <code>max_agents = 2</code>.</li>
+      <li><code>memory_consent</code> — every memory write is a candidate; <code>require_approval</code> from the requester before commit.</li>
+      <li><code>approval_requirement</code> — artifact transition to <code>published</code> requires finance director sign-off.</li>
+      <li><code>external_sharing</code> — set to <code>deny</code> for all egress connectors; the only "sharing" is in-app artifact visibility.</li>
+      <li><code>rate_limit</code> — bucket on <code>connector_calls</code> queue; cap SQL calls per minute per tenant.</li>
+    </ul>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">06</span>
+    <h2>Execution plan</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Async, agentic swarm. The coordinator runs on <code>agent_runs</code>; the optional analyst runs on <code>swarm_children</code>. SQL goes through <code>connector_calls</code>.</p>
+    <div class="diagram">
+      <span class="diagram-label">Execution plan</span>
+      <div class="mermaid">
+flowchart TB
+  Ingress([Trigger]) --> Validate["Validate payload<br/>sync_function"]
+  Validate --> Policy{Policy stack<br/>allow?}
+  Policy -->|deny| Fail([Command failed:<br/>policy_denied])
+  Policy -->|allow| Enqueue[Enqueue SwarmRun<br/>queue: agent_runs]
+  Enqueue --> Coord["Coordinator AgentRun<br/>agent_tool_call loop"]
+  Coord --> SQL["run_sql via Snowflake<br/>connector_call<br/>queue: connector_calls"]
+  Coord --> Mem["retrieve_memory<br/>agent_tool_call"]
+  Coord --> Decide{Need deeper<br/>analysis?}
+  Decide -->|yes| Analyst["Analyst sub-AgentRun<br/>queue: swarm_children"]
+  Decide -->|no| Draft
+  Analyst --> Draft["Draft artifact<br/>sync_function"]
+  Draft --> Approval["Approval: finance director<br/>human_task"]
+  Approval --> Publish["Mark artifact published<br/>sync_function"]
+  Publish --> Done([succeeded])
+  style Policy fill:#F5E0D2,stroke:#D97757
+  style Decide fill:#F5E0D2,stroke:#D97757
+  style Coord fill:#EFE6F0,stroke:#7A5560
+  style Analyst fill:#EFE6F0,stroke:#7A5560
+  style Approval fill:#F5E0D2,stroke:#D97757
+  style Done fill:#F1F2EC,stroke:#6B7B5A
+      </div>
+    </div>
+    <h3>Execution modes used</h3>
+    <div class="pill-grid">
+      <div class="pill">sync_function</div>
+      <div class="pill">async_task</div>
+      <div class="pill">connector_call</div>
+      <div class="pill">agent_tool_call</div>
+      <div class="pill">human_task</div>
+    </div>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">07</span>
+    <h2>Effects table</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Read-only investigation. No <code>CoreEffect</code> rows are emitted to <code>domain_effects</code>. The artifact is an Artifact, not an effect.</p>
+    <div class="callout tip">
+      <div class="callout-label">Note</div>
+      <p>Effects are side-effect plans on the outside world. This workflow performs no external writes — Snowflake access is <code>SELECT</code>-only, memory writes are internal Concord state, and the artifact is in-app. Therefore the effects table is empty by design.</p>
+    </div>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">08</span>
+    <h2>Memory</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <h3>Reads</h3>
+    <p>The coordinator's <code>retrieve_memory</code> tool searches prior incidents at <code>scope = project</code> (the finance-investigations project). Hit shape: incident summary, date range, root cause, resolution.</p>
+    <h3>Writes</h3>
+    <p>On a confirmed root cause, the coordinator proposes a memory candidate:</p>
+    <table>
+      <thead><tr><th>field</th><th>value</th></tr></thead>
+      <tbody>
+        <tr><td><code>scope</code></td><td><code>project</code> (finance-investigations)</td></tr>
+        <tr><td><code>type</code></td><td><code>fact</code></td></tr>
+        <tr><td><code>commit_policy</code></td><td>candidate → <code>memory_consent</code> policy → <code>require_approval</code> → commit</td></tr>
+        <tr><td><code>conflict_resolution</code></td><td>supersede with audit</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <div class="callout-label">Rule</div>
+      <p>No memory write commits without explicit consent from the requester. The candidate is durable; the commit is gated.</p>
+    </div>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">09</span>
+    <h2>Artifacts</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <table>
+      <thead><tr><th>field</th><th>value</th></tr></thead>
+      <tbody>
+        <tr><td><code>artifact_type</code></td><td><code>report</code></td></tr>
+        <tr><td><code>status path</code></td><td><code>draft → created → validated → published</code></td></tr>
+        <tr><td><code>storage</code></td><td>Postgres pointer; body in object storage (<code>location</code> ref)</td></tr>
+        <tr><td><code>versioning</code></td><td>new artifact per command run; supersedes prior via <code>parent_artifact_id</code></td></tr>
+        <tr><td><code>archival</code></td><td>90-day visibility; archived to cold storage thereafter</td></tr>
+        <tr><td><code>contents</code></td><td>flagged window, metric breakdowns, retrieved prior incidents, analyst notes (if spawned), coordinator's hypothesis, confidence band</td></tr>
+      </tbody>
+    </table>
+    <p>The artifact also references a <code>query_result</code> sub-artifact per SQL run, for traceability.</p>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">10</span>
+    <h2>Approvals</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>One approval. Triggered by the <code>approval_requirement</code> policy when the artifact transitions from <code>validated</code> to <code>published</code>.</p>
+    <h3>Review packet</h3>
+    <ul>
+      <li><code>requested_action</code>: publish revenue investigation artifact to finance team view</li>
+      <li><code>requester</code>: command's <code>requested_by</code></li>
+      <li><code>reason</code>: anomaly score and flagged window</li>
+      <li><code>affected_data</code>: artifact draft preview + linked query_result snapshots</li>
+      <li><code>triggering_policy</code>: <code>external_sharing</code> + <code>approval_requirement</code></li>
+      <li><code>expected_outcome</code>: artifact visible in-app to <code>finance_team</code> group</li>
+      <li><code>risk_level</code>: medium (financial reporting)</li>
+      <li><code>expiration</code>: 72 hours</li>
+    </ul>
+    <p>Approver: <b>finance director</b> (role-resolved, not a hardcoded user).</p>
+    <p>On rejection: artifact stays <code>validated</code>, command transitions to <code>succeeded</code> (the investigation ran), and the rejection reason becomes an audit event. No alternate publish path.</p>
+    <p>On expiration: artifact stays <code>validated</code>; a follow-up <code>approval_callback</code> may re-request after edits.</p>
+    <div class="diagram">
+      <span class="diagram-label">Approval flow</span>
+      <div class="mermaid">
+sequenceDiagram
+  participant Swarm as Swarm
+  participant Concord as Concord
+  participant Director as Finance Director
+  participant FinanceTeam as Finance Team
+  Swarm->>Concord: artifact.status = validated
+  Concord->>Concord: policy: external_sharing + approval_requirement
+  Concord->>Director: approval.pending<br/>review_packet
+  Director->>Concord: approve | reject
+  alt approved
+    Concord->>Concord: artifact.status = published
+    Concord-->>FinanceTeam: in-app visibility
+  else rejected
+    Concord->>Concord: artifact stays validated
+    Concord->>Concord: audit: approval_rejected
+  else expired (72h)
+    Concord->>Concord: approval.status = expired
+  end
+      </div>
+    </div>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">11</span>
+    <h2>Agent / swarm config</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <h3>SwarmRun</h3>
+    <table>
+      <thead><tr><th>field</th><th>value</th></tr></thead>
+      <tbody>
+        <tr><td><code>objective</code></td><td>Investigate flagged revenue window; produce finance-grade summary</td></tr>
+        <tr><td><code>execution_mode</code></td><td><code>hierarchical</code></td></tr>
+        <tr><td><code>join_strategy</code></td><td><code>coordinator_synthesis</code></td></tr>
+        <tr><td><code>max_agents</code></td><td>2 (coordinator + at most one analyst)</td></tr>
+        <tr><td><code>max_depth</code></td><td>2</td></tr>
+        <tr><td><code>max_total_steps</code></td><td>40</td></tr>
+        <tr><td><code>max_cost_units</code></td><td>30</td></tr>
+      </tbody>
+    </table>
+    <h3>Coordinator AgentRun</h3>
+    <table>
+      <thead><tr><th>field</th><th>value</th></tr></thead>
+      <tbody>
+        <tr><td><code>goal</code></td><td>investigate window, decide if delegation needed, draft artifact</td></tr>
+        <tr><td><code>allowed_tools</code></td><td><code>run_sql</code>, <code>retrieve_memory</code>, <code>propose_memory_write</code>, <code>spawn_analyst</code>, <code>create_artifact</code></td></tr>
+        <tr><td><code>allowed_connectors</code></td><td><code>snowflake</code> (reader), <code>postgres</code> (Concord state), <code>vector_db</code> (memory)</td></tr>
+        <tr><td><code>memory_scope</code></td><td><code>project</code> (finance-investigations)</td></tr>
+        <tr><td><code>context_scope</code></td><td><code>workspace_id</code>, <code>command_id</code>, payload</td></tr>
+        <tr><td><code>max_steps</code></td><td>20</td></tr>
+        <tr><td><code>spawn_depth</code></td><td>1 (may spawn one child)</td></tr>
+      </tbody>
+    </table>
+    <h3>Analyst sub-AgentRun (optional)</h3>
+    <table>
+      <thead><tr><th>field</th><th>value</th></tr></thead>
+      <tbody>
+        <tr><td><code>goal</code></td><td>deeper root-cause dive on a sub-window or metric dimension</td></tr>
+        <tr><td><code>allowed_tools</code></td><td><code>run_sql</code>, <code>retrieve_memory</code> (subset of parent)</td></tr>
+        <tr><td><code>allowed_connectors</code></td><td><code>snowflake</code> (reader), <code>vector_db</code> (subset of parent)</td></tr>
+        <tr><td><code>memory_scope</code></td><td><code>project</code> (same as parent, no widening)</td></tr>
+        <tr><td><code>max_steps</code></td><td>20</td></tr>
+        <tr><td><code>spawn_depth</code></td><td>0 (cannot spawn further; <code>max_depth=2</code> reached)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout">
+      <div class="callout-label">Rule</div>
+      <p><code>child_scope ⊆ parent_scope</code> for tools, connectors, and memory. The analyst's allowed_tools and allowed_connectors are each a strict subset of the coordinator's; memory scope is identical (project) and may not widen.</p>
+    </div>
+    <div class="diagram">
+      <span class="diagram-label">Swarm hierarchy</span>
+      <div class="mermaid">
+flowchart TB
+  Swarm["SwarmRun<br/>objective: investigate window<br/>execution_mode: hierarchical<br/>join_strategy: coordinator_synthesis"]
+  Swarm --> Coord["Coordinator AgentRun<br/>max_steps: 20<br/>spawn_depth: 1"]
+  Coord -->|optional spawn| Analyst["Analyst sub-AgentRun<br/>max_steps: 20<br/>spawn_depth: 0<br/>scope ⊆ coordinator"]
+  Coord -->|synthesizes| Join["Join: coordinator_synthesis<br/>draft artifact"]
+  Analyst -->|returns findings| Join
+  style Swarm fill:#EFE6F0,stroke:#7A5560
+  style Coord fill:#EFE6F0,stroke:#7A5560
+  style Analyst fill:#EFE6F0,stroke:#7A5560
+  style Join fill:#F1F2EC,stroke:#6B7B5A
+      </div>
+    </div>
+    <h3>Allowed tools</h3>
+    <div class="pill-grid">
+      <div class="pill">run_sql</div>
+      <div class="pill">retrieve_memory</div>
+      <div class="pill">propose_memory_write</div>
+      <div class="pill">spawn_analyst</div>
+      <div class="pill">create_artifact</div>
+    </div>
+    <h3>Forbidden tools</h3>
+    <div class="pill-grid">
+      <div class="pill">send_email</div>
+      <div class="pill">slack_post</div>
+      <div class="pill">http_post</div>
+      <div class="pill">write_sql</div>
+      <div class="pill">file_upload_external</div>
+      <div class="pill">commit_memory_direct</div>
+    </div>
+    <h3>Allowed connectors</h3>
+    <div class="pill-grid">
+      <div class="pill">snowflake (reader)</div>
+      <div class="pill">postgres (concord state)</div>
+      <div class="pill">vector_db (memory)</div>
+    </div>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">12</span>
+    <h2>Audit events</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>All written to <code>domain_events</code> with appropriate <code>purpose</code>.</p>
+    <h3>purpose = audit</h3>
+    <div class="pill-grid">
+      <div class="pill">command.created</div>
+      <div class="pill">policy.decision</div>
+      <div class="pill">approval.requested</div>
+      <div class="pill">approval.approved</div>
+      <div class="pill">approval.rejected</div>
+      <div class="pill">approval.expired</div>
+      <div class="pill">artifact.published</div>
+      <div class="pill">memory.candidate</div>
+      <div class="pill">memory.committed</div>
+    </div>
+    <h3>purpose = agent_step</h3>
+    <p>Per agent step: <code>step_index</code>, <code>tool_name</code>, <code>latency_ms</code>, <code>token_usage</code>, <code>cost_units</code>. Carries <code>agent_run_id</code> for the coordinator and analyst separately.</p>
+    <h3>purpose = event</h3>
+    <div class="pill-grid">
+      <div class="pill">investigation.started</div>
+      <div class="pill">investigation.completed</div>
+      <div class="pill">analyst.spawned</div>
+      <div class="pill">analyst.returned</div>
+    </div>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">13</span>
+    <h2>Cancellation model</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Mode: <code>graceful</code>. Transitions: <code>running → cancelling → cancelled</code>.</p>
+    <p>Each agent step's prelude checks the cancellation flag. In-flight SQL is allowed to finish (read-only, bounded); the next step is skipped and the swarm exits.</p>
+    <p><code>propagate_cancellation = true</code>: cancelling the parent command cancels the coordinator AgentRun, which cancels the analyst sub-AgentRun if active.</p>
+    <div class="diagram">
+      <span class="diagram-label">Cancellation cascade</span>
+      <div class="mermaid">
+flowchart TB
+  Cancel([Cancel signal]) --> Cmd["Command<br/>running → cancelling"]
+  Cmd --> Coord["Coordinator AgentRun<br/>cancelling"]
+  Coord --> Analyst["Analyst sub-AgentRun<br/>cancelling (if active)"]
+  Coord --> SQL["In-flight SQL<br/>allowed to finish"]
+  Analyst --> Done["All children<br/>cancelled"]
+  SQL --> Done
+  Done --> Final["Command<br/>cancelled"]
+  style Cmd fill:#F5E0D2,stroke:#D97757
+  style Coord fill:#EFE6F0,stroke:#7A5560
+  style Analyst fill:#EFE6F0,stroke:#7A5560
+      </div>
+    </div>
+    <p>Not chosen: <code>compensate_then_stop</code>. There are no external writes to undo.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">14</span>
+    <h2>Compensation graph</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p><b>Skipped — not applicable.</b> Read-only investigation: zero <code>CoreEffect</code> rows, no external mutations, no inverse operations to declare. The compensation graph validator passes trivially (empty manifest).</p>
+    <div class="callout tip">
+      <div class="callout-label">Note</div>
+      <p>If a future iteration adds an external write (e.g., publish to a finance Slack channel or file a Jira ticket on root-cause confirmation), revisit this section and declare the inverse per side effect.</p>
+    </div>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">15</span>
+    <h2>Runtime config</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <h3>Adapter</h3>
+    <p>DBOS. Required capabilities: <code>DURABLE_WORKFLOWS</code>, <code>DURABLE_STEPS</code>, <code>QUEUES</code>, <code>SIGNALS</code>, <code>SUBWORKFLOWS</code>. <code>SAGA_COMPENSATION_NATIVE</code> not needed (no effects).</p>
+    <h3>Queues</h3>
+    <div class="pill-grid">
+      <div class="pill">agent_runs</div>
+      <div class="pill">swarm_children</div>
+      <div class="pill">connector_calls</div>
+    </div>
+    <h3>RetryPolicy</h3>
+    <table>
+      <thead><tr><th>operation</th><th>retryable</th><th>max_attempts</th><th>backoff_s</th></tr></thead>
+      <tbody>
+        <tr><td><code>run_sql</code></td><td>yes (transient + rate_limited)</td><td>3</td><td>5, 15, 45</td></tr>
+        <tr><td><code>retrieve_memory</code></td><td>yes (transient)</td><td>3</td><td>2, 6, 18</td></tr>
+        <tr><td><code>spawn_analyst</code></td><td>no</td><td>1</td><td>—</td></tr>
+        <tr><td><code>create_artifact</code></td><td>yes (transient db)</td><td>3</td><td>2, 6, 18</td></tr>
+      </tbody>
+    </table>
+    <h3>Constraints</h3>
+    <ul>
+      <li>Latency: background (minutes acceptable; p95 target 5 min end-to-end excluding approval wait).</li>
+      <li>Cost: <code>max_cost_units = 30</code> per SwarmRun.</li>
+      <li>Compliance: audit retention 7 years (SOX). PII never leaves the warehouse — row-level security at the view layer.</li>
+      <li>Multi-tenant: hard isolation by <code>workspace_id</code> on every read.</li>
+    </ul>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">16</span>
+    <h2>Test plan</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <h3>Unit</h3>
+    <ul>
+      <li>Payload validation: required fields, range &le; 31 days, valid <code>metric_scope</code>.</li>
+      <li>Idempotency key composition for both ingress types.</li>
+      <li>Coordinator decision function: when to spawn analyst (pure over typed dataclasses).</li>
+      <li>Review packet builder produces all required fields.</li>
+    </ul>
+    <h3>Integration</h3>
+    <ul>
+      <li>Postgres + DBOS adapter: SwarmRun row, coordinator AgentRun row, optional analyst row, status transitions.</li>
+      <li>Snowflake reader role: <code>SELECT</code> passes, <code>INSERT/UPDATE/DELETE</code> denied at connector.</li>
+      <li>Memory candidate write + consent commit flow.</li>
+    </ul>
+    <h3>Workflow (end-to-end)</h3>
+    <ul>
+      <li>Happy path: webhook → investigation → no analyst → artifact drafted → approved → published.</li>
+      <li>Branch: deeper analysis triggered → analyst spawned → join via <code>coordinator_synthesis</code> → artifact reflects analyst findings.</li>
+      <li>Approval rejected: artifact remains <code>validated</code>, command <code>succeeded</code>, audit event recorded.</li>
+      <li>Approval expired at 72h: artifact remains <code>validated</code>, approval marked <code>expired</code>.</li>
+      <li>Cancellation mid-flight: graceful exit, no orphaned state.</li>
+    </ul>
+    <h3>Safety</h3>
+    <ul>
+      <li>Policy denial: non-<code>finance_investigators</code> trigger → <code>policy_denied</code>, no SwarmRun row.</li>
+      <li>Forbidden tool call: coordinator attempts <code>send_email</code> → blocked at policy, audit event, agent step recorded.</li>
+      <li>Subset rule: analyst attempts a tool the coordinator lacks → blocked, <code>agent_risk</code> policy denial.</li>
+      <li>Memory consent: candidate without approval never commits.</li>
+      <li>External sharing: artifact transition without approval → blocked.</li>
+      <li>Cost ceiling: SwarmRun exceeds <code>max_cost_units = 30</code> → terminates with <code>agent_failed</code>.</li>
+    </ul>
+    <h3>Boundary discipline</h3>
+    <ul>
+      <li><code>concord_boundary_check.py</code> rejects <code>dbos</code> / <code>temporalio</code> imports outside the runtime adapter file.</li>
+    </ul>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">17</span>
+    <h2>Open questions / risks</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <ul>
+      <li><b>Detector reliability.</b> If the upstream detector floods the webhook (e.g., recurring false positives across many windows), the <code>rate_limit</code> bucket needs to be sized — current cap is TBD per-tenant per-hour. Wire to alerting if rejection rate climbs.</li>
+      <li><b>Analyst spawn heuristic.</b> The coordinator's "need deeper analysis?" decision is currently model-driven. Worth defining a small rubric (confidence threshold, metric variance, multi-dimension flag) and treating the heuristic as a policy input — measurable and overrideable.</li>
+      <li><b>Approver fallback.</b> If the finance director is unavailable and the 72h expiry hits, the artifact stalls. Open: define a delegation path (deputy approver) or alert-and-extend pattern. For now, expiry is terminal.</li>
+      <li><b>Memory pollution.</b> Project-scope memory could accumulate low-quality candidates if consent is granted reflexively. Consider periodic memory review as a separate workflow.</li>
+      <li><b>Multi-investigation overlap.</b> Two overlapping date ranges triggered separately produce two artifacts. Should one supersede the other? Currently independent; <code>parent_artifact_id</code> linkage is manual.</li>
+      <li><b>Versioning across coordinator iterations.</b> If the coordinator agent's prompt or tool surface changes meaningfully, agent_run rows should reflect a <code>config_version</code>. Adapter capability <code>WORKFLOW_VERSIONING</code> is not in DBOS today — flag for Temporal if it becomes load-bearing.</li>
+      <li><b>Anomaly score absence.</b> Manual trigger has <code>anomaly_score = null</code>. The coordinator's prompt should handle this gracefully — confirm in evals.</li>
+    </ul>
+  </div>
+</details>
+
+</body>
+</html>

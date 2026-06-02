@@ -3794,6 +3794,11 @@ attempt 4 → fail permanently</code></pre>
   </summary>
   <div class="section-body">
 
+<div class="callout tip">
+  <div class="callout-label">Worked design</div>
+  <p>A full Concord design doc for a deterministic vendor-data sync (scheduled trigger, retry taxonomy, idempotent upsert, no human approvals) is available as a worked example: <a href="examples/vendor-data-sync.html" target="_blank" rel="noopener">vendor-data-sync · Concord design ↗</a></p>
+</div>
+
 <p>User asks: <em>Generate the May revenue report.</em></p>
 
 <div class="diagram">
@@ -3836,6 +3841,11 @@ sequenceDiagram
   </summary>
   <div class="section-body">
 
+<div class="callout tip">
+  <div class="callout-label">Worked design</div>
+  <p>A full Concord design doc for a hotel reservation flow (approval gate at &gt;$500, vendor connector with idempotency, <code>compensate_then_stop</code> cancellation with vendor cancel as compensation) is available as a worked example: <a href="examples/hotel-booking.html" target="_blank" rel="noopener">hotel-booking · Concord design ↗</a></p>
+</div>
+
 <p>User asks: <em>Publish the May revenue report to finance@example.com.</em></p>
 
 <div class="diagram">
@@ -3877,6 +3887,11 @@ sequenceDiagram
     <span class="chevron" aria-hidden="true"></span>
   </summary>
   <div class="section-body">
+
+<div class="callout tip">
+  <div class="callout-label">Worked design</div>
+  <p>A full Concord design doc for an agentic revenue-anomaly investigation (coordinator + optional analyst sub-agent, governed SQL tool, memory with consent gate, approval before external sharing, read-only) is available as a worked example: <a href="examples/revenue-investigation-swarm.html" target="_blank" rel="noopener">revenue-investigation-swarm · Concord design ↗</a></p>
+</div>
 
 <p>User asks: <em>Investigate why revenue dropped last week and draft a summary.</em></p>
 
@@ -4431,7 +4446,7 @@ flowchart LR
 flowchart LR
   P1["Phase 1<br/>Logical core"] --> P2["Phase 2<br/>Postgres backend"]
   P2 --> P3["Phase 3<br/>Worker"]
-  P3 --> P4["Phase 4<br/>Approvals & notifications"]
+  P3 --> P4["Phase 4<br/>Approvals &amp; notifications"]
   P4 --> P5["Phase 5<br/>Connectors"]
   P5 --> P6["Phase 6<br/>Agent gateway"]
   P6 --> P7["Phase 7<br/>Hardening"]

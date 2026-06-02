@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vendor sales daily sync · Concord design</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: 'Inter, sans-serif',
+      primaryColor: '#FAF8F2',
+      primaryTextColor: '#141413',
+      primaryBorderColor: '#D97757',
+      lineColor: '#8A8478',
+      background: '#F0EEE6',
+      mainBkg: '#FAF8F2',
+      nodeTextColor: '#141413',
+      textColor: '#141413',
+      noteBkgColor: '#F5E9DC',
+      noteBorderColor: '#D97757',
+      actorBkg: '#FAF8F2',
+      actorBorder: '#D97757',
+      actorTextColor: '#141413',
+    },
+    flowchart: { curve: 'basis', padding: 18, useMaxWidth: true },
+    sequence: { actorMargin: 50, boxMargin: 10, useMaxWidth: true },
+  });
+</script>
+<style>
+  :root {
+    --paper: #F0EEE6; --panel: #FAF8F2; --ink: #141413; --ink-soft: #2C2A28;
+    --muted: #5D5A52; --muted-2: #8A8478; --line: #DDD8CC;
+    --coral: #D97757; --coral-deep: #B85F40; --coral-bg: #FAEEE3;
+    --sage: #6B7B5A; --plum: #7A5560; --code-bg: #F8F5EC; --inline-code: #F0EAD9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 56px 56px 120px; max-width: 980px; margin-inline: auto;
+    font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.7;
+    color: var(--ink); background: var(--paper);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  header.hero { margin-bottom: 56px; padding-bottom: 32px; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--coral); margin-bottom: 18px;
+  }
+  .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--coral); }
+  h1 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 56px; font-weight: 400;
+    line-height: 1.05; letter-spacing: -0.025em; margin: 0 0 16px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 19px; line-height: 1.55;
+    color: var(--muted); margin: 0 0 22px; max-width: 640px;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 22px; font-size: 13px; color: var(--muted); }
+  .meta strong {
+    display: block; font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--muted-2); margin-bottom: 3px;
+  }
+  .meta span > b { color: var(--ink); font-weight: 600; }
+  details.section { border-bottom: 1px solid var(--line); padding: 28px 0; }
+  details.section:last-of-type { border-bottom: none; }
+  summary.section-head { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 14px; padding-right: 40px; position: relative; }
+  summary.section-head::-webkit-details-marker { display: none; }
+  summary.section-head .section-num {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); min-width: 56px;
+  }
+  summary.section-head h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 24px; font-weight: 500;
+    margin: 0; color: var(--ink); letter-spacing: -0.01em; transition: color 0.15s ease;
+  }
+  summary.section-head:hover h2 { color: var(--coral-deep); }
+  summary.section-head .chev {
+    position: absolute; right: 4px; top: 50%; width: 10px; height: 10px;
+    border-right: 1.5px solid var(--muted-2); border-bottom: 1.5px solid var(--muted-2);
+    transform: translateY(-65%) rotate(45deg); transition: transform 0.25s ease;
+  }
+  details[open] summary.section-head .chev { transform: translateY(-25%) rotate(-135deg); }
+  .body { padding: 14px 0 6px 70px; }
+  .body > :first-child { margin-top: 0; }
+  h3 { font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; margin: 24px 0 8px; color: var(--ink); }
+  p { margin: 10px 0; color: var(--ink-soft); }
+  ul, ol { margin: 10px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 4px 0; }
+  ul li::marker, ol li::marker { color: var(--coral); }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.88em; padding: 1px 6px; background: var(--inline-code); border-radius: 3px; }
+  pre { margin: 16px 0; padding: 18px 22px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; }
+  pre code { background: none; padding: 0; font-size: 13px; line-height: 1.65; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  th { font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-2); background: var(--panel); }
+  td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--ink); font-weight: 500; }
+  .pill-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; margin: 14px 0; }
+  .pill { padding: 7px 11px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--ink-soft); font-weight: 500; }
+  .pill.retry { border-left: 3px solid var(--sage); }
+  .pill.noretry { border-left: 3px solid var(--coral); }
+  .pill .pill-tag { display: block; font-family: 'Inter', sans-serif; font-size: 9.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted-2); margin-top: 2px; }
+  .pill.retry .pill-tag { color: var(--sage); }
+  .pill.noretry .pill-tag { color: var(--coral-deep); }
+  .callout { margin: 18px 0; padding: 14px 18px; border-left: 2px solid var(--coral); background: var(--coral-bg); border-radius: 0 4px 4px 0; }
+  .callout.tip { border-left-color: var(--sage); background: #F1F2EC; }
+  .callout.warn { border-left-color: #B68A2E; background: #F7F1E0; }
+  .callout-label { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px; color: var(--coral-deep); }
+  .callout.tip .callout-label { color: var(--sage); }
+  .callout.warn .callout-label { color: #936A1D; }
+  .callout p { margin: 0; color: var(--ink); font-size: 14.5px; }
+  .diagram { margin: 22px 0; padding: 22px 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; position: relative; }
+  .diagram-label { position: absolute; top: -9px; left: 18px; background: var(--paper); padding: 0 10px; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); }
+  .mermaid { display: flex; justify-content: center; min-height: 60px; }
+  .mermaid svg { max-width: 100%; height: auto !important; }
+  .skip-note { font-size: 13.5px; color: var(--muted); font-style: italic; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="eyebrow">Concord design</div>
+  <h1>Vendor sales daily sync</h1>
+  <p class="lede">Pull yesterday's sales from a vendor REST API at 03:00 UTC, detect stale snapshots via content hash, and upsert into the Postgres warehouse partition — fully automated, idempotent end to end.</p>
+  <div class="meta">
+    <span><strong>Trigger</strong><b>scheduled_trigger</b></span>
+    <span><strong>Plan</strong><b>async deterministic</b></span>
+    <span><strong>Cancellation</strong><b>graceful</b></span>
+    <span><strong>Approvals</strong><b>0</b></span>
+    <span><strong>Effects</strong><b>1</b></span>
+  </div>
+</header>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">02</span>
+    <h2>User journey</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>No interactive user. A scheduled trigger fires nightly; the data engineering team consumes the result by querying the warehouse the next morning and by inspecting the audit/event stream when something looks off.</p>
+    <div class="diagram">
+      <span class="diagram-label">Operator journey</span>
+      <div class="mermaid">
+flowchart LR
+  Cron([03:00 UTC cron]) --> Cmd[sync_vendor_sales command]
+  Cmd --> Run[Workflow runs<br/>5-15 min]
+  Run --> Outcome{Outcome}
+  Outcome -->|fresh data| Warehouse[(Warehouse partition<br/>yyyy-mm-dd upserted)]
+  Outcome -->|stale snapshot| Skipped[Skip write<br/>emit skipped event]
+  Outcome -->|bad request| Failed[command.failed<br/>page on-call]
+  Warehouse --> Morning([DE team queries 09:00])
+  Skipped --> Morning
+  Failed --> Pager([On-call pager])
+  style Outcome fill:#F5E0D2,stroke:#D97757
+  style Skipped fill:#F1F2EC,stroke:#6B7B5A
+  style Warehouse fill:#F1F2EC,stroke:#6B7B5A
+      </div>
+    </div>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">03</span>
+    <h2>Trigger / ingress</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Ingress type: <code>scheduled_trigger</code>. A cron schedule (<code>0 3 * * *</code> UTC) issues the command; the runtime adapter's <code>schedule</code> capability owns delivery.</p>
+    <h3>Idempotency at ingress</h3>
+    <p>Duplicate triggers must collapse to one command — defensive against double-fire of the scheduler.</p>
+    <ul>
+      <li><code>idempotency_key</code> template: <code>sync_vendor_sales:{vendor_name}:{target_date}</code></li>
+      <li><code>target_date</code> = the business day being pulled (UTC, the day before the cron fires)</li>
+      <li>Unique constraint on the sparse index in <code>commands.idempotency_key</code> guarantees second-fire becomes a no-op</li>
+    </ul>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">04</span>
+    <h2>Command(s)</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Single command type. No fan-in, no dependencies on other commands.</p>
+<pre><code>command_type: sync_vendor_sales
+requested_by: system:scheduler
+ingress: scheduled_trigger
+payload:
+  vendor_name: "acme_sales"
+  target_date: "2026-06-01"     # yesterday at fire time
+  vendor_base_url: "https://api.acme.example/v1"
+context:
+  workspace_id: null            # single-tenant; see Constraints
+  trace_id: &lt;runtime-supplied&gt;
+cancellation_mode: graceful
+idempotency_key: "sync_vendor_sales:acme_sales:2026-06-01"
+dbos_workflow_id: &lt;runtime-supplied&gt;</code></pre>
+    <p>Status path used: <code>created → validated → queued → running → succeeded | failed | cancelled</code>. <code>compensated</code> and <code>expired</code> are not used — there is nothing to compensate (idempotent upsert) and no expiry deadline.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">05</span>
+    <h2>Policy stack</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>The policy chain evaluated at <code>validated</code>:</p>
+    <div class="pill-grid">
+      <div class="pill">permission</div>
+      <div class="pill">connector_scope</div>
+      <div class="pill">rate_limit</div>
+      <div class="pill">cost</div>
+    </div>
+    <ul>
+      <li><code>permission</code> — the scheduler service principal must hold <code>warehouse.write</code> on the target partition and <code>connector.acme_sales.read</code>.</li>
+      <li><code>connector_scope</code> — restricts the vendor connector to <code>GET /sales/daily</code> and the Postgres connector to upserts on <code>warehouse.sales_daily</code>.</li>
+      <li><code>rate_limit</code> — bucket cap on vendor calls (handful per day, but caps protect against retry storms).</li>
+      <li><code>cost</code> — soft cap on retry budget; if exhausted, escalate rather than burn budget.</li>
+    </ul>
+    <p>No <code>data_safety</code>, <code>external_sharing</code>, <code>destructive_action</code>, <code>memory_consent</code>, <code>agent_risk</code>, or <code>approval_requirement</code> — none apply (no PII flagged, no human gate, no agent).</p>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">06</span>
+    <h2>Execution plan</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>Async deterministic. Five steps, all <code>connector_call</code> or <code>sync_function</code>. No agent, no human task.</p>
+    <div class="diagram">
+      <span class="diagram-label">Execution plan</span>
+      <div class="mermaid">
+flowchart TB
+  Start([scheduled_trigger fires<br/>03:00 UTC]) --> Fetch["1 · fetch_vendor_snapshot<br/>connector_call · connector_calls queue<br/>retry on 5xx · 30s/2m/10m"]
+  Fetch --> Hash["2 · compute_snapshot_hash<br/>sync_function · SHA256 of latest_snapshot_id"]
+  Hash --> LoadPrev["3 · load_last_hash<br/>connector_call · postgres read"]
+  LoadPrev --> Compare{"hash == previous?"}
+  Compare -->|yes · stale| Skip["4a · record_skipped<br/>sync_function · emit skipped event"]
+  Compare -->|no · fresh| Write["4b · upsert_warehouse_partition<br/>connector_call · idempotent upsert<br/>connector_calls queue"]
+  Write --> Record["5 · record_hash<br/>connector_call · persist new hash"]
+  Skip --> Done([command.succeeded])
+  Record --> Done
+  style Compare fill:#F5E0D2,stroke:#D97757
+  style Skip fill:#F1F2EC,stroke:#6B7B5A
+  style Write fill:#F1F2EC,stroke:#6B7B5A
+  style Done fill:#F1F2EC,stroke:#6B7B5A
+      </div>
+    </div>
+    <h3>Step table</h3>
+    <table>
+      <thead>
+        <tr><th>step</th><th>execution_mode</th><th>queue</th><th>side effect?</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>fetch_vendor_snapshot</td><td>connector_call</td><td>connector_calls</td><td>no (read)</td></tr>
+        <tr><td>compute_snapshot_hash</td><td>sync_function</td><td>—</td><td>no</td></tr>
+        <tr><td>load_last_hash</td><td>connector_call</td><td>connector_calls</td><td>no (read)</td></tr>
+        <tr><td>upsert_warehouse_partition</td><td>connector_call</td><td>connector_calls</td><td><b>yes</b></td></tr>
+        <tr><td>record_hash</td><td>connector_call</td><td>connector_calls</td><td>incidental (state bookkeeping)</td></tr>
+      </tbody>
+    </table>
+    <p>The single declared effect (<code>warehouse_partition.write</code>) is the upsert in step 4b. Step 5 stores the hash for next-day comparison; treated as bookkeeping, not a domain effect.</p>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">07</span>
+    <h2>Effects table</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <table>
+      <thead>
+        <tr><th>effect_type</th><th>side_effect?</th><th>idempotency_key</th><th>compensation</th><th>counter_pure?</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>warehouse_partition.write</code></td>
+          <td>yes</td>
+          <td><code>sync_vendor_sales:acme_sales:2026-06-01</code></td>
+          <td>none (idempotent upsert)</td>
+          <td>n/a</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout tip">
+      <div class="callout-label">Why no compensation</div>
+      <p>The warehouse write is an upsert keyed by <code>(vendor_name, target_date)</code>. A retry or re-run overwrites the same partition row-for-row; partial failure leaves the partition either unchanged or in the latest good state. Nothing to reverse.</p>
+    </div>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">08</span>
+    <h2>Memory</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p class="skip-note">Skipped — workflow is stateless across runs. The previous-day snapshot hash needed for staleness detection is stored in an operational table (<code>vendor_sync_state</code>), not Concord <code>Memory</code>: it's not a learned preference or user-scoped fact, it's deterministic bookkeeping for an idempotent connector.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">09</span>
+    <h2>Artifacts</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p class="skip-note">Skipped — no human-readable durable output. The warehouse partition itself is queried directly by downstream consumers; it's an <i>effect</i>, not an <code>Artifact</code>.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">10</span>
+    <h2>Approvals</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p class="skip-note">Skipped — fully automated. No human gate anywhere in the plan; the user explicitly opted out of approvals.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">11</span>
+    <h2>Agent / swarm config</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p class="skip-note">Skipped — plan is deterministic. No <code>AgentRun</code> or <code>SwarmRun</code>; no LLM in the loop.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">12</span>
+    <h2>Audit events</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p>All rows land in the single append-only <code>domain_events</code> table. <code>purpose</code> distinguishes them.</p>
+    <div class="pill-grid">
+      <div class="pill">command.created</div>
+      <div class="pill">command.validated</div>
+      <div class="pill">command.running</div>
+      <div class="pill">vendor.fetch.started</div>
+      <div class="pill">vendor.fetch.succeeded</div>
+      <div class="pill">vendor.fetch.retried</div>
+      <div class="pill">snapshot.hashed</div>
+      <div class="pill">snapshot.stale_detected</div>
+      <div class="pill">snapshot.fresh_detected</div>
+      <div class="pill">warehouse.upsert.started</div>
+      <div class="pill">warehouse.upsert.succeeded</div>
+      <div class="pill">command.succeeded</div>
+      <div class="pill">command.failed</div>
+      <div class="pill">command.cancelled</div>
+    </div>
+    <p>Retention: <b>90 days</b> for <code>purpose=audit</code>. <code>purpose=event</code> rows used for operational metrics may be aged out sooner via policy.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">13</span>
+    <h2>Cancellation model</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p><code>cancellation_mode: graceful</code>. Transitions: <code>running → cancelling → cancelled</code>. Each step's prelude checks the cancellation flag and bails before doing connector work.</p>
+    <div class="diagram">
+      <span class="diagram-label">Cancellation cascade</span>
+      <div class="mermaid">
+flowchart LR
+  CancelReq([cancel signal]) --> Flag["set cancellation flag<br/>command.status = cancelling"]
+  Flag --> Probe{"current step?"}
+  Probe -->|fetch in flight| Finish["let fetch finish<br/>discard result"]
+  Probe -->|between steps| Exit["exit cleanly<br/>no upsert"]
+  Probe -->|upsert in flight| Complete["let upsert finish<br/>partition is idempotent"]
+  Finish --> Cancelled([command.cancelled])
+  Exit --> Cancelled
+  Complete --> Cancelled
+  style Probe fill:#F5E0D2,stroke:#D97757
+      </div>
+    </div>
+    <div class="callout">
+      <div class="callout-label">Rule</div>
+      <p>Graceful is safe here because the only effect is an idempotent upsert. If an upsert is mid-flight when cancel arrives, completing it leaves the partition in a valid state — letting it finish is cheaper than tearing down.</p>
+    </div>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">14</span>
+    <h2>Compensation graph</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <p class="skip-note">Skipped — no declared compensation. The single effect (<code>warehouse_partition.write</code>) is an idempotent upsert keyed by <code>(vendor_name, target_date)</code>; re-running the workflow overwrites in place. <code>requires_compensation=false</code> at registration. The compensation graph validator will accept this only because <code>declared_compensation</code> is intentionally <code>None</code> with the idempotent-upsert justification recorded.</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">15</span>
+    <h2>Runtime config</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <h3>Adapter</h3>
+    <p>DBOS. Required capabilities: <code>DURABLE_WORKFLOWS</code>, <code>DURABLE_STEPS</code>, <code>QUEUES</code>, <code>SCHEDULES</code>. Not required: <code>SUBWORKFLOWS</code>, <code>SIGNALS</code> (cancel uses the flag pattern, not a runtime signal), <code>SAGA_COMPENSATION_NATIVE</code>, <code>WORKFLOW_VERSIONING</code>.</p>
+
+    <h3>Queues</h3>
+    <div class="pill-grid">
+      <div class="pill">connector_calls</div>
+      <div class="pill">scheduled_maintenance</div>
+    </div>
+    <p>All connector calls (vendor fetch, warehouse upsert, hash read/write) ride <code>connector_calls</code>. The cron itself dispatches via the runtime's <code>schedule</code> capability — no app-level queue needed for the trigger.</p>
+
+    <h3>Retry policy</h3>
+    <p>Wired per-operation through <code>compile_policy(operation) -&gt; dict</code> for the runtime adapter. Error classes split into retryable and non-retryable:</p>
+    <div class="pill-grid">
+      <div class="pill retry">transient_connector_error<span class="pill-tag">retryable</span></div>
+      <div class="pill retry">rate_limited<span class="pill-tag">retryable</span></div>
+      <div class="pill retry">timeout<span class="pill-tag">retryable</span></div>
+      <div class="pill noretry">validation_error<span class="pill-tag">no retry</span></div>
+      <div class="pill noretry">permanent_connector_error<span class="pill-tag">no retry</span></div>
+      <div class="pill noretry">policy_denied<span class="pill-tag">no retry</span></div>
+      <div class="pill noretry">permission_denied<span class="pill-tag">no retry</span></div>
+    </div>
+    <p>For <code>fetch_vendor_snapshot</code>:</p>
+<pre><code>RetryPolicy(
+  operation="fetch_vendor_snapshot",
+  retryable=["transient_connector_error", "rate_limited", "timeout"],
+  max_attempts=4,                       # initial + 3 retries
+  backoff_seconds=[30, 120, 600],       # 30s · 2min · 10min
+  requires_idempotency_key=False,       # GET is naturally idempotent
+)</code></pre>
+    <p>Vendor 4xx bad-request responses map to <code>validation_error</code> (or <code>permanent_connector_error</code> for 401/403/404) — non-retryable, fail fast, route to <code>command.failed</code>.</p>
+
+    <h3>Schedule</h3>
+    <p>Cron <code>0 3 * * *</code> UTC, single instance lock (idempotency_key blocks double-fire even if the scheduler misbehaves).</p>
+  </div>
+</details>
+
+<details class="section">
+  <summary class="section-head">
+    <span class="section-num">16</span>
+    <h2>Test plan</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <h3>Unit (functional core)</h3>
+    <ul>
+      <li><code>compute_snapshot_hash</code> — SHA256 over <code>latest_snapshot_id</code> stable across whitespace / key order.</li>
+      <li><code>is_stale(current_hash, last_hash)</code> — true iff bytes equal; treats <code>None</code> last-hash as "fresh".</li>
+      <li>Error classifier: 5xx → <code>transient_connector_error</code>; 400/422 → <code>validation_error</code>; 401/403/404 → <code>permanent_connector_error</code>; 429 → <code>rate_limited</code>.</li>
+      <li><code>RetryPolicy</code> compilation: backoff list yields <code>[30, 120, 600]</code> in order.</li>
+    </ul>
+    <h3>Integration (Postgres + DBOS adapter)</h3>
+    <ul>
+      <li>Idempotency key collision: two scheduler fires for the same date collapse to one command row.</li>
+      <li>Effect lifecycle: <code>planned → executing → succeeded</code> rows inserted for the upsert.</li>
+      <li>Audit purpose split: <code>event</code>, <code>audit</code>, <code>agent_step</code> rows land in <code>domain_events</code> with the correct <code>purpose</code>.</li>
+    </ul>
+    <h3>Workflow (end-to-end)</h3>
+    <ul>
+      <li><b>Happy path</b>: fresh snapshot → upsert succeeds → <code>command.succeeded</code> → warehouse row visible.</li>
+      <li><b>Stale snapshot</b>: hash matches previous → no upsert → <code>snapshot.stale_detected</code> emitted → <code>command.succeeded</code>.</li>
+      <li><b>Transient 5xx then success</b>: vendor returns 503 twice, then 200 → retries fire at 30s and 2m → workflow succeeds.</li>
+      <li><b>Bad request</b>: vendor returns 400 → no retry → <code>command.failed</code> with <code>validation_error</code>.</li>
+      <li><b>Cancel mid-fetch</b>: cancel signal during fetch → fetch completes, no upsert, <code>command.cancelled</code>.</li>
+    </ul>
+    <h3>Safety</h3>
+    <ul>
+      <li>Forbidden connector op: attempt to POST to vendor → <code>connector_scope</code> policy denies.</li>
+      <li>Retry storm guard: 5xx loop hits <code>max_attempts</code> → no further retries, <code>command.failed</code>, <code>cost</code> policy emits cost-cap audit row.</li>
+    </ul>
+    <h3>Boundary discipline</h3>
+    <ul>
+      <li><code>concord_boundary_check.py</code> rejects any <code>import dbos</code> outside the runtime adapter module.</li>
+    </ul>
+    <h3>Acceptance criterion</h3>
+    <p>For 30 consecutive UTC days, at 03:00 UTC ± 5 min the workflow produces either (a) a warehouse partition matching the vendor's reported daily totals within tolerance, or (b) a <code>snapshot.stale_detected</code> audit row with no warehouse write. Zero duplicate writes; zero unretried 5xx that should have retried; zero retries on 4xx.</p>
+  </div>
+</details>
+
+<details class="section" open>
+  <summary class="section-head">
+    <span class="section-num">17</span>
+    <h2>Open questions / risks</h2>
+    <span class="chev"></span>
+  </summary>
+  <div class="body">
+    <ul>
+      <li><b>Staleness false-positive risk.</b> Hashing <code>latest_snapshot_id</code> alone trusts the vendor to bump that field. If the vendor occasionally bumps the id without changing the payload (or vice versa), we either skip a real update or write a no-op. Consider hashing a content-derived field too (e.g. row count + total revenue) as a second signal.</li>
+      <li><b>Backoff vs cron cadence.</b> Worst case: 30s + 2m + 10m = ~12.5 min of retry. Comfortably fits inside a daily window; revisit if the workflow's downstream SLA tightens.</li>
+      <li><b>Vendor cursor / pagination.</b> Spec assumes a single GET returns the full daily snapshot. If pagination is required, the fetch step decomposes into a sub-plan; hash should cover the assembled payload, not the first page.</li>
+      <li><b>Schedule drift / missed runs.</b> If the runtime misses a fire (e.g. outage), do we backfill yesterday's missed date? Current design: no automatic catch-up; operator issues an ad-hoc command with the missed <code>target_date</code> (same idempotency_key shape).</li>
+      <li><b>Multi-tenant later.</b> Single-tenant today (<code>workspace_id: null</code>). If multi-tenancy lands, <code>idempotency_key</code> must include workspace and the partition key needs a tenant dimension.</li>
+      <li><b>Vendor auth rotation.</b> Out of scope here; credentials live in connector config. A rotation that breaks auth surfaces as <code>permanent_connector_error</code> (401/403) and pages on-call — verify the alerting wiring.</li>
+      <li><b>Audit retention.</b> 90 days agreed. Confirm the warehouse partition's own retention is longer (so audit + warehouse can be cross-checked beyond 90d if needed).</li>
+    </ul>
+  </div>
+</details>
+
+</body>
+</html>
