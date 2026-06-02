@@ -53,6 +53,17 @@
   }
   .back-link:hover { color: var(--coral-deep); text-decoration: none; }
 
+  /* Site nav strip */
+  .site-nav {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    font-size: 12.5px; color: var(--muted); margin-bottom: 28px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .site-nav a { color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
+  .site-nav a:hover { color: var(--coral-deep); }
+  .site-nav a.current { color: var(--ink); font-weight: 600; }
+  .site-nav .sep { color: var(--muted-2); }
+
   /* Sections */
   section { margin: 56px 0; }
   h2 {
@@ -170,8 +181,14 @@
 </head>
 <body>
 
+<nav class="site-nav">
+  <a href="index.html">Architecture</a><span class="sep">·</span>
+  <a href="problems.html">Problems</a><span class="sep">·</span>
+  <a class="current">Positioning</a><span class="sep">·</span>
+  <a href="examples/hotel-booking.html">Examples</a>
+</nav>
+
 <header class="hero">
-  <a class="back-link" href="index.html">← Concord architecture spec</a>
   <div class="eyebrow">Concord positioning</div>
   <h1>What Concord is — and what it isn't.</h1>
   <p class="lede">Concord is a <strong>semantic contract layer for governed work</strong>. It sits between applications, agents, connectors, humans, and durable workflow runtimes. It defines what an action means, who or what is allowed to perform it, what state or memory it touches, which artifacts it produces, and how it must be audited.</p>

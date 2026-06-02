@@ -1316,6 +1316,7 @@
     <div class="meta-item"><strong>Runtime</strong><span>DBOS (default)</span></div>
     <div class="meta-item"><strong>System of record</strong><span>Postgres</span></div>
     <div class="meta-item"><strong>Scope</strong><span>Semantic primitive layer</span></div>
+    <div class="meta-item"><strong>Why</strong><span><a href="problems.html" target="_blank" rel="noopener" style="color: var(--coral); text-decoration: underline; text-underline-offset: 3px;">Problems Concord solves ↗</a></span></div>
     <div class="meta-item"><strong>Positioning</strong><span><a href="what-concord-is.html" target="_blank" rel="noopener" style="color: var(--coral); text-decoration: underline; text-underline-offset: 3px;">What Concord is &amp; isn't ↗</a></span></div>
   </div>
 </section>
@@ -1349,6 +1350,12 @@
   <div class="section-body">
 
 <p class="lede">Concord is a library of contracts that turn any user request, system event, webhook, scheduled job, or agent action into a durable, inspectable workflow. The library declares what work means and what governance it requires; a durable runtime — DBOS by default — executes it.</p>
+
+<div class="callout">
+  <div class="callout-label">Why Concord exists</div>
+  <p>Modern applications now coordinate agents, humans, tools, connectors, memory, approvals, artifacts, and durable workflows — but each piece usually has its own local model. Agent frameworks govern the agent loop. Workflow runtimes govern execution. Connector systems expose integrations. Policy engines decide rules. Observability tools record traces.</p>
+  <p>But <strong>no shared contract</strong> explains what an action means, who authorized it, what it touched, what it produced, and how it should be audited. Concord provides that missing semantic contract layer. For the full problem statement — ten concrete pains, one per chapter — see <a href="problems.html" target="_blank" rel="noopener">The problems Concord solves ↗</a>.</p>
+</div>
 
 <div class="callout tip">
   <div class="callout-label">Positioning</div>

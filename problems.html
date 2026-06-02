@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The problems Concord solves · Concord</title>
+<meta name="description" content="Why Concord exists as a semantic contract layer for governed deterministic and agentic workflows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F0EEE6; --panel: #FAF8F2; --panel-2: #F5F1E6;
+    --ink: #141413; --ink-soft: #2C2A28;
+    --muted: #5D5A52; --muted-2: #8A8478;
+    --line: #DDD8CC;
+    --coral: #D97757; --coral-deep: #B85F40; --coral-bg: #FAEEE3;
+    --sage: #6B7B5A; --plum: #7A5560;
+    --code-bg: #F8F5EC; --inline-code: #F0EAD9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 64px 56px 120px; max-width: 1080px; margin-inline: auto;
+    font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.7;
+    color: var(--ink); background: var(--paper);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  a { color: var(--coral); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:hover { color: var(--coral-deep); }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.86em; padding: 1px 6px; background: var(--inline-code); border-radius: 3px; }
+  pre { margin: 18px 0; padding: 20px 24px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--ink); white-space: pre; }
+
+  /* Site nav strip */
+  .site-nav {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    font-size: 12.5px; color: var(--muted); margin-bottom: 28px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .site-nav a { color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
+  .site-nav a:hover { color: var(--coral-deep); }
+  .site-nav a.current { color: var(--ink); font-weight: 600; }
+  .site-nav .sep { color: var(--muted-2); }
+
+  /* Header */
+  header.hero { margin-bottom: 56px; padding-bottom: 40px; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--coral); margin-bottom: 22px;
+  }
+  .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--coral); }
+  header h1 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 56px; font-weight: 400;
+    line-height: 1.05; letter-spacing: -0.025em; margin: 0 0 18px; color: var(--ink); max-width: 820px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; line-height: 1.55;
+    color: var(--muted); margin: 0 0 24px; max-width: 720px;
+  }
+  .lede strong { color: var(--ink); font-weight: 500; }
+
+  /* Sections */
+  section { margin: 56px 0; }
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 28px; font-weight: 400;
+    line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 18px; color: var(--ink);
+    padding-bottom: 12px; border-bottom: 1px solid var(--line);
+    scroll-margin-top: 24px;
+  }
+  h2 .num {
+    display: inline-block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); margin-right: 14px;
+    vertical-align: middle;
+  }
+  h3 {
+    font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600;
+    letter-spacing: -0.005em; margin: 26px 0 8px; color: var(--ink);
+  }
+  p { margin: 12px 0; color: var(--ink-soft); }
+  ul, ol { margin: 12px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 6px 0; }
+  ul li::marker { color: var(--coral); }
+
+  /* Callouts */
+  .callout {
+    margin: 22px 0; padding: 16px 20px; border-left: 2px solid var(--coral);
+    background: var(--coral-bg); border-radius: 0 4px 4px 0;
+  }
+  .callout.tip { border-left-color: var(--sage); background: #F1F2EC; }
+  .callout-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px;
+    color: var(--coral-deep);
+  }
+  .callout.tip .callout-label { color: var(--sage); }
+  .callout p { margin: 0; color: var(--ink); font-size: 15px; }
+
+  /* Card grid (TOC scan) */
+  .card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px; margin: 28px 0;
+  }
+  .card {
+    padding: 18px 20px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; text-decoration: none; color: inherit;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+    display: block;
+  }
+  .card:hover {
+    border-color: var(--coral); background: var(--panel-2);
+    transform: translateY(-1px);
+    text-decoration: none;
+  }
+  .card-num {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral);
+    margin-bottom: 6px;
+  }
+  .card-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 17px; font-weight: 500;
+    color: var(--ink); margin: 0; letter-spacing: -0.01em; line-height: 1.3;
+  }
+
+  /* Pullquote — for the closing thesis */
+  .pullquote {
+    margin: 32px 0; padding: 16px 0 16px 28px; border-left: 2px solid var(--coral);
+    font-family: 'Source Serif 4', Georgia, serif; font-style: italic; font-size: 20px;
+    line-height: 1.55; color: var(--ink); font-weight: 400;
+  }
+  .pullquote-line { display: block; }
+
+  /* CTA */
+  .cta {
+    margin: 48px 0 0; padding: 22px 26px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 6px;
+    display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  }
+  .cta-text {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 17px; color: var(--ink);
+    margin: 0; max-width: 640px;
+  }
+  .cta-btn {
+    display: inline-block; padding: 10px 18px; background: var(--coral); color: var(--paper);
+    text-decoration: none; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600;
+    border-radius: 6px; transition: background 0.15s ease; white-space: nowrap;
+  }
+  .cta-btn:hover { background: var(--coral-deep); color: var(--paper); }
+
+  @media (max-width: 880px) {
+    body { padding: 36px 22px 80px; }
+    header h1 { font-size: 40px; }
+    h2 { font-size: 22px; }
+    .cta { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html">Architecture</a><span class="sep">·</span>
+  <a class="current">Problems</a><span class="sep">·</span>
+  <a href="what-concord-is.html">Positioning</a><span class="sep">·</span>
+  <a href="examples/hotel-booking.html">Examples</a>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Why Concord exists</div>
+  <h1>The problems Concord solves.</h1>
+  <p class="lede">Concord exists because modern applications now coordinate humans, agents, tools, connectors, memory, approvals, artifacts, and long-running workflows — but <strong>no shared contract</strong> explains what an action means, who authorized it, what it touched, what it produced, and how it should be audited.</p>
+  <p class="lede" style="font-size:18px;">Each piece below is a real operational pain that pushed Concord into existence. Read straight through, or skim the cards and jump to what hurts most.</p>
+</header>
+
+<section>
+  <h2>Ten problems</h2>
+  <p>Each card jumps to the section below.</p>
+  <div class="card-grid">
+    <a class="card" href="#p1"><div class="card-num">01</div><div class="card-title">Agent actions aren't governed consistently</div></a>
+    <a class="card" href="#p2"><div class="card-num">02</div><div class="card-title">Deterministic and agentic workflows live in separate worlds</div></a>
+    <a class="card" href="#p3"><div class="card-num">03</div><div class="card-title">Connector access is too ad hoc</div></a>
+    <a class="card" href="#p4"><div class="card-num">04</div><div class="card-title">Memory needs governance, not just storage</div></a>
+    <a class="card" href="#p5"><div class="card-num">05</div><div class="card-title">Human approvals are bolted on too late</div></a>
+    <a class="card" href="#p6"><div class="card-num">06</div><div class="card-title">Artifacts need lineage</div></a>
+    <a class="card" href="#p7"><div class="card-num">07</div><div class="card-title">Multi-agent swarms need authority boundaries</div></a>
+    <a class="card" href="#p8"><div class="card-num">08</div><div class="card-title">Capability definitions are scattered and unversioned</div></a>
+    <a class="card" href="#p9"><div class="card-num">09</div><div class="card-title">Runtime logs are not domain audit</div></a>
+    <a class="card" href="#p10"><div class="card-num">10</div><div class="card-title">Durable execution needs a semantic layer</div></a>
+  </div>
+</section>
+
+<section id="p1">
+  <h2><span class="num">01</span>Agent actions aren't governed consistently</h2>
+  <p>Agent frameworks are good at reasoning, tool use, memory injection, and multi-step execution. But once an agent can call tools that mutate external systems, write memory, create artifacts, spawn subagents, or ask for approval, the agent loop alone is not enough.</p>
+
+  <p>Without Concord, agent behavior often looks like this:</p>
+<pre>agent decides
+→ agent calls tool
+→ tool mutates system
+→ trace is recorded somewhere</pre>
+  <p>That's too loose for high-impact workflows. Concord changes the model:</p>
+<pre>agent proposes action
+→ Concord creates a command
+→ policy evaluates the command
+→ approval is requested if needed
+→ DBOS executes the action durably
+→ Postgres records the domain truth</pre>
+  <p>The agent doesn't directly own execution. It <em>proposes</em> work under a governed contract.</p>
+</section>
+
+<section id="p2">
+  <h2><span class="num">02</span>Deterministic and agentic workflows live in separate worlds</h2>
+  <p>Most systems treat deterministic jobs, human approvals, and agent workflows as different categories of infrastructure. Concord treats them as different execution modes under the same primitive contract.</p>
+
+  <p>A sync function, async task, connector call, human approval, memory write, artifact creation, agent run, and swarm run all become part of the same governed model:</p>
+<pre>Ingress
+→ Command
+→ Context
+→ Policy
+→ Plan
+→ Execution
+→ State
+→ Artifact / Memory / Approval / Notification
+→ Audit</pre>
+  <p>The result: deterministic workflows and agentic workflows share the same governance, audit, approval, memory, and connector model.</p>
+</section>
+
+<section id="p3">
+  <h2><span class="num">03</span>Connector access is too ad hoc</h2>
+  <p>Connectors are where real-world side effects happen — sending a Slack message, creating a GitHub PR, starting a Databricks job, booking a hotel, writing to a database, charging a payment method. Most systems expose these as tools or thin API wrappers.</p>
+
+  <p>Concord treats every connector operation as a governed capability. For each operation, the registry can declare:</p>
+  <ul>
+    <li>who can invoke it</li>
+    <li>which command type it belongs to</li>
+    <li>whether it has side effects</li>
+    <li>whether it requires approval</li>
+    <li>what idempotency key template is required</li>
+    <li>what artifact it produces</li>
+    <li>what compensation action exists</li>
+    <li>what audit events must be written</li>
+  </ul>
+  <p>The same access pattern works for an in-house HTTP wrapper and a third-party SaaS API. Safe, explainable, versioned.</p>
+</section>
+
+<section id="p4">
+  <h2><span class="num">04</span>Memory needs governance, not just storage</h2>
+  <p>Agent memory is often treated as a retrieval or vector-database problem. Concord treats memory as a <em>governed domain primitive</em>.</p>
+
+  <p>A memory write isn't just data persistence. It often encodes a user preference, team policy, behavioral pattern, or long-lived assumption that affects future actions. Concord makes that explicit:</p>
+<pre>memory candidate
+→ memory policy
+→ consent check
+→ conflict check
+→ confidence score
+→ scoped memory write
+→ audit event</pre>
+  <p>This prevents agents from silently accumulating durable preferences or facts without governance — the class of bug that's invisible the first day and impossible to unwind on day 30.</p>
+</section>
+
+<section id="p5">
+  <h2><span class="num">05</span>Human approvals are bolted on too late</h2>
+  <p>Many workflow systems support approvals, but the approval is often just a pause, a button, or a pipeline gate. Concord treats approval as a domain object with a contract:</p>
+  <ul>
+    <li><strong>approval type</strong></li>
+    <li><strong>risk level</strong></li>
+    <li><strong>required fields</strong></li>
+    <li><strong>approval packet</strong></li>
+    <li><strong>approver resolution</strong></li>
+    <li><strong>expiration</strong></li>
+    <li><strong>decision options</strong></li>
+    <li><strong>resume behavior</strong></li>
+    <li><strong>audit requirements</strong></li>
+  </ul>
+  <p>A hotel-booking approval should include price, dates, cancellation policy, payment summary, guest information, and expiration. A GitHub PR approval or memory-write approval has a different packet. The approval isn't generic — it's specific to the action being authorized.</p>
+</section>
+
+<section id="p6">
+  <h2><span class="num">06</span>Artifacts need lineage</h2>
+  <p>Modern workflows produce durable outputs — reports, booking drafts, reservation confirmations, GitHub PR summaries, Databricks job results, approval packets, agent research summaries, memory summaries.</p>
+
+  <p>Without a shared artifact model, outputs scatter across logs, files, tool responses, chat messages, and database rows. Concord treats artifacts as first-class records with:</p>
+  <ul>
+    <li>type · schema · version</li>
+    <li>owner · visibility</li>
+    <li>lineage (source command, source agent run, source connector invocation)</li>
+    <li>audit trail</li>
+  </ul>
+  <p>Workflow outputs become durable, queryable, reviewable, and reusable across runs.</p>
+</section>
+
+<section id="p7">
+  <h2><span class="num">07</span>Multi-agent swarms need authority boundaries</h2>
+  <p>Subagents introduce a new problem: delegation. If one agent can spawn another, the system must know what role the child has, what tools it can use, what connectors it can access, what memory it can read, what artifacts it can create, how deep spawning can go, how results are joined, how cancellation cascades.</p>
+
+  <p>Concord models this explicitly through:</p>
+<pre>AgentRun
+SwarmRun
+AgentInvocation
+AgentStep
+JoinStrategy
+ToolScope
+ConnectorScope
+MemoryScope</pre>
+  <p>Subagent spawning isn't an uncontrolled runtime behavior — it's a governed command. The invariant: <code>child_scope ⊆ parent_scope</code> for tools, connectors, and memory.</p>
+</section>
+
+<section id="p8">
+  <h2><span class="num">08</span>Capability definitions are scattered and unversioned</h2>
+  <p>In most systems, capability definitions spread across prompts, tool schemas, connector configs, workflow code, policy files, agent runtime settings, approval logic, memory rules, and artifact schemas. There's no single source of truth.</p>
+
+  <p>Concord introduces a <strong>Domain Registry</strong> to make the capability graph explicit. It defines and versions:</p>
+  <ul>
+    <li>skills · tools · connectors · command types</li>
+    <li>policies · artifact schemas · memory schemas</li>
+    <li>agent roles · swarm templates · approval types</li>
+    <li>evaluation suites · workflow types</li>
+  </ul>
+  <p>That graph can answer impact questions like <em>"if we retire this connector operation, which tools break?"</em> and <em>"if we change this artifact schema, which commands produce it?"</em> — questions that today are answered with grep, prayer, and an incident.</p>
+</section>
+
+<section id="p9">
+  <h2><span class="num">09</span>Runtime logs are not domain audit</h2>
+  <p>Workflow engines and agent frameworks can tell you what executed. Concord records what <em>happened</em> in domain terms.</p>
+
+  <p>Instead of only knowing:</p>
+<pre>step 4 succeeded
+tool call completed
+agent trace finished</pre>
+  <p>Concord records:</p>
+<pre>hotel booking approval was requested
+user approved the final price and cancellation terms
+booking connector was invoked with idempotency key
+reservation confirmation artifact was created
+travel preference memory candidate was proposed
+notification was sent to the user</pre>
+  <p>This is the difference between runtime observability and domain audit. Both are useful; they answer different questions.</p>
+</section>
+
+<section id="p10">
+  <h2><span class="num">10</span>Durable execution needs a semantic layer above it</h2>
+  <p>DBOS gives Concord durable workflows, steps, queues, schedules, retries, and Postgres-backed execution. But DBOS doesn't define what a hotel booking, memory write, approval packet, artifact, connector operation, or subagent spawn <em>means</em>. Concord provides that semantic layer.</p>
+
+  <p>The split:</p>
+<pre>DBOS answers:
+  How does this run durably?
+
+Postgres answers:
+  What is the durable truth?
+
+Concord answers:
+  What does this action mean, who allowed it,
+  what does it touch, and how should it be governed?</pre>
+</section>
+
+<section>
+  <h2><span class="num">Why</span>This matters</h2>
+  <p>Concord makes governed work composable. A hotel booking, a GitHub PR, a Databricks job, a Slack message, a memory write, a report, an approval request, a subagent spawn — all follow the same contract:</p>
+
+<pre>Command
+→ Policy
+→ Plan
+→ Execution
+→ Artifact / Memory / Approval / Notification
+→ Audit</pre>
+
+  <p>That gives application developers a consistent way to build workflows that are:</p>
+  <ul>
+    <li>durable</li>
+    <li>auditable</li>
+    <li>policy-aware</li>
+    <li>approval-aware</li>
+    <li>memory-safe</li>
+    <li>connector-safe</li>
+    <li>agent-compatible</li>
+    <li>swarm-ready</li>
+    <li>extensible</li>
+  </ul>
+
+  <p>Concord isn't trying to replace DBOS, agent frameworks, policy engines, or connector systems. It gives them a shared contract.</p>
+
+  <div class="callout">
+    <div class="callout-label">The core thesis</div>
+    <p>DBOS gives durable execution. Postgres gives durable truth. <strong>Concord gives the semantic contract for governed work.</strong></p>
+  </div>
+</section>
+
+<div class="cta">
+  <p class="cta-text">Ready for the architecture? The spec covers core primitives, multi-agent extensions, the runtime adapter, and the Domain Registry.</p>
+  <a href="index.html" class="cta-btn">Read the architecture →</a>
+</div>
+
+</body>
+</html>
