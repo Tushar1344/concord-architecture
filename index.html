@@ -908,15 +908,21 @@
 
   .spec-table tbody tr:hover td { background: var(--panel-2); }
 
-  /* Tabs · top-level Part navigation */
+  /* Tabs · top-level Part navigation. Sticky so they stay reachable on scroll. */
   .tabs {
     display: flex;
     gap: 4px;
-    margin: 0 0 56px;
-    padding: 6px;
-    background: var(--panel);
+    margin: 0 -8px 56px;
+    padding: 8px;
+    background: rgba(240, 238, 230, 0.92);
+    backdrop-filter: saturate(160%) blur(10px);
+    -webkit-backdrop-filter: saturate(160%) blur(10px);
     border: 1px solid var(--line);
     border-radius: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 6px 20px rgba(20, 20, 19, 0.04);
   }
 
   .tab {
@@ -971,10 +977,16 @@
      :not(.tab) excludes the tab buttons themselves, which also carry data-part. */
   body[data-active-part="1"] [data-part="2"]:not(.tab),
   body[data-active-part="1"] [data-part="3"]:not(.tab),
+  body[data-active-part="1"] [data-part="4"]:not(.tab),
   body[data-active-part="2"] [data-part="1"]:not(.tab),
   body[data-active-part="2"] [data-part="3"]:not(.tab),
+  body[data-active-part="2"] [data-part="4"]:not(.tab),
   body[data-active-part="3"] [data-part="1"]:not(.tab),
-  body[data-active-part="3"] [data-part="2"]:not(.tab) {
+  body[data-active-part="3"] [data-part="2"]:not(.tab),
+  body[data-active-part="3"] [data-part="4"]:not(.tab),
+  body[data-active-part="4"] [data-part="1"]:not(.tab),
+  body[data-active-part="4"] [data-part="2"]:not(.tab),
+  body[data-active-part="4"] [data-part="3"]:not(.tab) {
     display: none !important;
   }
 
@@ -1239,6 +1251,55 @@
         <li><a href="#sec-102">102 · Source notes</a></li>
       </ol>
     </div>
+
+    <div class="toc-group" data-part="4">
+      <p class="toc-group-name accent">Part IV · Domain registry</p>
+      <ol>
+        <li><a href="#sec-103">103 · Executive summary</a></li>
+        <li><a href="#sec-104">104 · Problem statement</a></li>
+        <li><a href="#sec-105">105 · Product decision</a></li>
+        <li><a href="#sec-106">106 · Design philosophy</a></li>
+      </ol>
+    </div>
+
+    <div class="toc-group" data-part="4">
+      <p class="toc-group-name">Registry · types &amp; model</p>
+      <ol>
+        <li><a href="#sec-107">107 · Registry types</a></li>
+        <li><a href="#sec-108">108 · Registry kernel</a></li>
+        <li><a href="#sec-109">109 · Data model</a></li>
+      </ol>
+    </div>
+
+    <div class="toc-group" data-part="4">
+      <p class="toc-group-name">Registry · lifecycle</p>
+      <ol>
+        <li><a href="#sec-110">110 · Versioning</a></li>
+        <li><a href="#sec-111">111 · Lifecycle</a></li>
+        <li><a href="#sec-112">112 · Bindings &amp; resolution</a></li>
+        <li><a href="#sec-113">113 · DBOS lifecycle workflows</a></li>
+      </ol>
+    </div>
+
+    <div class="toc-group" data-part="4">
+      <p class="toc-group-name">Registry · surface</p>
+      <ol>
+        <li><a href="#sec-114">114 · Policy &amp; governance</a></li>
+        <li><a href="#sec-115">115 · API surface</a></li>
+        <li><a href="#sec-116">116 · Admin UX</a></li>
+        <li><a href="#sec-117">117 · Observability</a></li>
+      </ol>
+    </div>
+
+    <div class="toc-group" data-part="4">
+      <p class="toc-group-name">Registry · plan</p>
+      <ol>
+        <li><a href="#sec-118">118 · Implementation plan</a></li>
+        <li><a href="#sec-119">119 · Acceptance criteria</a></li>
+        <li><a href="#sec-120">120 · Open questions</a></li>
+        <li><a href="#sec-121">121 · Final recommendation</a></li>
+      </ol>
+    </div>
   </nav>
 </aside>
 
@@ -1271,6 +1332,10 @@
   <button class="tab" type="button" role="tab" data-part="3" aria-selected="false" aria-controls="part-content">
     <span class="tab-name">Runtime adapter · DBOS today</span>
     <span class="tab-meta">Sections 74–102 · Part III</span>
+  </button>
+  <button class="tab" type="button" role="tab" data-part="4" aria-selected="false" aria-controls="part-content">
+    <span class="tab-name">Domain registry</span>
+    <span class="tab-meta">Sections 103–121 · Part IV</span>
   </button>
 </nav>
 
@@ -7679,6 +7744,960 @@ flowchart LR
   </div>
 </details>
 
+<!-- ============================================================ -->
+<!-- PART IV · DOMAIN REGISTRY                                    -->
+<!-- ============================================================ -->
+
+<!-- 103 -->
+<details class="section" id="sec-103" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 103</span>
+    <span class="section-title">Executive summary · Domain Registry</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p class="lede">Concord needs a first-class <strong>Domain Registry</strong> — the capability control plane that is the source of truth for every governed capability contract in the system.</p>
+
+<p>The registry answers <em>what capabilities exist, which versions are active, who owns them, what they allow, what policies apply, what connectors they touch, what memory they read/write, what artifacts they produce, which agents can use them, which workflows can invoke them, which approvals are required, which DBOS workflows execute them</em>.</p>
+
+<div class="pill-grid">
+  <div class="pill">skills</div>
+  <div class="pill">tools</div>
+  <div class="pill">connectors</div>
+  <div class="pill">command_types</div>
+  <div class="pill">policies</div>
+  <div class="pill">artifact_schemas</div>
+  <div class="pill">memory_schemas</div>
+  <div class="pill">agent_roles</div>
+  <div class="pill">swarm_templates</div>
+  <div class="pill">approval_types</div>
+  <div class="pill">evaluation_suites</div>
+  <div class="pill">workflow_types</div>
+</div>
+
+<div class="callout rule">
+  <div class="callout-label">Architectural shift</div>
+  <p>A "Skill Registry" is not a standalone module. <strong>It is one domain registry inside the larger Concord Domain Registry.</strong></p>
+</div>
+
+<p>The core principle holds: capabilities can describe, propose, and guide. Only Concord commands can authorize. Only DBOS workflows and steps can execute. Only Postgres records the truth.</p>
+
+  </div>
+</details>
+
+<!-- 104 -->
+<details class="section" id="sec-104" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 104</span>
+    <span class="section-title">Problem statement</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>Concord is evolving from a workflow primitive layer into a governed action contract system. The need first appears as a <em>skill registry</em> problem — which agent skills exist, which versions are published, which agents can use them, what tools/connectors/memory/artifacts they touch.</p>
+
+<p>But skills are only one part of the capability graph. A skill often depends on many other registered things:</p>
+
+<pre data-lang="text"><code>hotel_booking_skill
+  uses tool: book_hotel
+    creates command_type: book_hotel
+      requires policy_bundle: hotel_booking_policy
+      requires approval_type: hotel_booking_approval
+      produces artifact_schema: reservation_confirmation
+      invokes connector_operation: hotel_booking.book_hotel
+      may write memory_schema: user.travel_preferences</code></pre>
+
+<p>Without a unified Domain Registry these relationships scatter across YAML, code, prompts, policy files, connector adapters, and agent runtime configuration — making it impossible to answer impact questions like <em>"if we retire this connector operation, which tools break?"</em> or <em>"if we change this artifact schema, which commands produce it?"</em>.</p>
+
+<div class="callout warn">
+  <div class="callout-label">Without a registry</div>
+  <p>Concord cannot fully deliver its core promise — <em>a governed contract layer for deterministic and agentic work</em>.</p>
+</div>
+
+  </div>
+</details>
+
+<!-- 105 -->
+<details class="section" id="sec-105" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 105</span>
+    <span class="section-title">Product decision</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<h3>105.1 · New core module</h3>
+
+<p>Concord adds a first-class module <code>concord.registry</code> (or <code>concord.domain_registry</code>) alongside the existing core, runtime, agents, connectors, and Postgres modules.</p>
+
+<pre data-lang="text"><code>concord/
+  core/
+    commands/  policies/  plans/  effects/  events/  state/
+  runtime/
+    dbos/  workflows/  steps/  queues/  schedules/
+  registry/                          ← new module
+    kernel/
+    skills/  tools/  connectors/  command_types/  policies/
+    artifacts/  memory/  agents/  swarms/  approvals/
+    evaluations/  workflows/
+  agents/
+    runtime_adapters/  tool_gateway/  swarms/  subagents/
+  connectors/
+    base/  adapters/
+  postgres/
+    repositories/  migrations/  projections/
+  api/
+    admin/  runtime/  webhooks/</code></pre>
+
+<h3>105.2 · Keep registries in Concord initially</h3>
+
+<p>The semantics of skills, tools, connectors, memory, artifacts, policy, approvals, agents, swarms, and command types are core to Concord's contract layer. A separate framework too early would risk becoming a generic catalog that doesn't understand Concord primitives.</p>
+
+<h3>105.3 · Future extraction path</h3>
+
+<p>The generic mechanics may later become a reusable library <code>concord-registry</code> covering versioned records, lifecycle state machine, artifact references, immutable version checks, generic binding resolution, compatibility constraints, audit event helpers, deprecation, retirement, rollback. Concord retains the domain semantics — what a skill, tool, connector operation, command type, approval type, memory schema, or agent role <em>means</em>.</p>
+
+  </div>
+</details>
+
+<!-- 106 -->
+<details class="section" id="sec-106" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 106</span>
+    <span class="section-title">Design philosophy</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<h3>106.1 · The Domain Registry is the capability graph</h3>
+
+<p>The registry models Concord's capability graph and answers impact questions across it.</p>
+
+<div class="diagram">
+  <span class="diagram-label">Capability graph shape</span>
+  <div class="mermaid">
+flowchart TB
+  AR[AgentRole] --> SK[Skill]
+  SK --> TO[Tool]
+  TO --> CT[CommandType]
+  CT --> PB[PolicyBundle]
+  CT --> AT[ApprovalType]
+  CT --> AS[ArtifactSchema]
+  CT --> MS[MemorySchema]
+  CT --> DW[DBOS Workflow]
+  TO --> CO[ConnectorOperation]
+  CO --> CN[Connector]
+  style CT fill:#F5E0D2,stroke:#D97757,stroke-width:1.5px
+  style AR fill:#EFE6F0,stroke:#7A5560
+  style DW fill:#FFFFFF,stroke:#141413
+  </div>
+</div>
+
+<h3>106.2 · Registries are semantic, not runtime execution</h3>
+
+<p>The registry defines what capabilities <em>mean</em>. DBOS defines <em>how</em> workflows execute durably. <code>book_hotel</code> as a registry entry declares high-risk, requires approval, produces <code>reservation_confirmation</code>, invokes <code>hotel_booking.book_hotel</code>, with idempotency key <code>book_hotel:{booking_draft_id}</code>. DBOS as the runtime executes the durable workflow with retries, recovery, and transaction tracking.</p>
+
+<h3>106.3 · Published versions are immutable</h3>
+
+<div class="callout rule">
+  <div class="callout-label">Rule</div>
+  <p>Every registry object that can influence behavior must be versioned. Published versions are <strong>immutable</strong>. Allowed: create / publish / deprecate / retire a version, change a binding to point to a new version, rollback a binding. Not allowed: mutate a published manifest in place, expand connector permissions in place, remove an approval requirement in place, change a schema in place.</p>
+</div>
+
+<h3>106.4 · Specific bindings beat global bindings</h3>
+
+<p>Resolution applies scope-aware precedence — more specific bindings override less specific ones.</p>
+
+<pre data-lang="text"><code>user → team → tenant → workflow_type → command_type
+     → agent_role → agent_name → app → environment → global</code></pre>
+
+<h3>106.5 · Runtime manifests are minimized</h3>
+
+<p>Agent runtimes, workflows, and tool gateways receive only the capabilities they are allowed to use. Draft versions, retired versions, other tenants' bindings, admin metadata, raw secrets, unbound skills, unallowed connectors, unallowed memory scopes — none of these leak into runtime manifests.</p>
+
+  </div>
+</details>
+
+<!-- 107 -->
+<details class="section" id="sec-107" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 107</span>
+    <span class="section-title">Registry types</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>Twelve registry types, each a typed view over the registry kernel.</p>
+
+<div class="card-grid">
+  <div class="card"><div class="card-num">Type 01</div><h4 class="card-name">Skill</h4><p class="card-desc">Reusable governed capability package: instructions, allowed tools / connectors / memory scopes / artifact scopes, evals, approval requirements, agent/runtime compatibility.</p></div>
+  <div class="card"><div class="card-num">Type 02</div><h4 class="card-name">Tool</h4><p class="card-desc">Executable internal capability: input/output schema, sync/async mode, side-effect classification, DBOS execution mode, idempotency, policy + artifact + command + connector mappings.</p></div>
+  <div class="card"><div class="card-num">Type 03</div><h4 class="card-name">Connector</h4><p class="card-desc">External system + operations: credential scopes, read/write scopes, rate limits, idempotency support, compensation behavior, approval requirements, adapter compatibility.</p></div>
+  <div class="card"><div class="card-num">Type 04</div><h4 class="card-name">Command type</h4><p class="card-desc">Canonical contract for a governed action: payload schema, default policy bundle, execution mode, approval behavior, artifacts, memory behavior, connector operations, DBOS workflow mapping, idempotency, risk level. <em>Likely the most important registry.</em></p></div>
+  <div class="card"><div class="card-num">Type 05</div><h4 class="card-name">Policy</h4><p class="card-desc">Named policy checks and bundles: policy input contract, decision outputs, risk classifications, applicability rules, bundles, external policy-engine references, versioning. Registry decides <em>where and how</em> policy applies; doesn't have to implement every engine.</p></div>
+  <div class="card"><div class="card-num">Type 06</div><h4 class="card-name">Artifact schema</h4><p class="card-desc">Contract for durable outputs: schema, visibility rules, lineage requirements, retention policy, external-sharing policy, version compatibility, rendering hints.</p></div>
+  <div class="card"><div class="card-num">Type 07</div><h4 class="card-name">Memory schema</h4><p class="card-desc">Contract for durable preferences and reusable facts: subject type, visibility, consent requirements, confidence requirements, expiration, supersession rules, retrieval rules, write policy.</p></div>
+  <div class="card"><div class="card-num">Type 08</div><h4 class="card-name">Agent role</h4><p class="card-desc">Capability boundary for an agent: allowed skills / tools / connectors / subagent roles, max steps, max depth, memory + artifact scope, approval behavior, runtime compatibility.</p></div>
+  <div class="card"><div class="card-num">Type 09</div><h4 class="card-name">Swarm template</h4><p class="card-desc">Governed multi-agent execution pattern: coordinator role, child roles, join strategy, spawn limits, parallelism, required artifacts and evaluations, approval gates, memory + connector scope inheritance.</p></div>
+  <div class="card"><div class="card-num">Type 10</div><h4 class="card-name">Approval type</h4><p class="card-desc">Contract for human authorization: required fields, approver resolution, expiration, risk level, UI schema, audit requirements, resume behavior, allowed decision values.</p></div>
+  <div class="card"><div class="card-num">Type 11</div><h4 class="card-name">Evaluation suite</h4><p class="card-desc">Contract for quality and safety checks: eval input/output schema, blocking vs advisory, applicability, version, runtime adapter.</p></div>
+  <div class="card"><div class="card-num">Type 12</div><h4 class="card-name">Workflow type</h4><p class="card-desc">Contract for a repeatable business / application workflow: default command sequence, allowed command types, default policies, default agent roles, default skills, approval gates, artifact expectations, DBOS workflow mapping.</p></div>
+</div>
+
+<h3>107.1 · Skill manifest example</h3>
+
+<pre data-lang="yaml"><code>name: hotel_booking
+version: 1.4.2
+display_name: Hotel Booking Skill
+runtime:
+  min_concord_version: "0.3.0"
+  compatible_agent_runtimes: [concord_agent_runtime, langgraph_adapter]
+lifecycle:
+  owner: travel-platform
+  risk_level: high
+capabilities:
+  - type: connector_operation
+    connector: hotel_booking
+    operation: book_hotel
+    side_effect: true
+    requires_approval: true
+  - type: artifact_write
+    artifact_type: reservation_confirmation
+  - type: memory_write
+    memory_type: user.travel_preferences
+    requires_consent: true
+policy:
+  required_checks: [permission, connector_scope, payment_token_required,
+                    cancellation_policy_disclosed, approval_required_for_booking]
+tools:
+  - name: book_hotel
+    command_type: book_hotel
+    mode: approval_gated_async
+evals:
+  required: [booking_terms_present, cancellation_policy_present, approval_packet_complete]</code></pre>
+
+<h3>107.2 · Command type manifest example</h3>
+
+<pre data-lang="yaml"><code>name: book_hotel
+version: 1.0.0
+risk_level: high
+execution:
+  mode: approval_gated_async
+  dbos_workflow: run_command
+payload_schema:
+  type: object
+  required: [booking_draft_id, payment_token_ref]
+policies:
+  required: [permission, connector_scope, payment_token_required, approval_required_for_booking]
+approval:
+  required: true
+  approval_type: hotel_booking_approval
+artifacts:
+  produces: [reservation_confirmation]
+connector_operations: [hotel_booking.book_hotel]
+idempotency:
+  required: true
+  key_template: "book_hotel:{booking_draft_id}"
+compensation:
+  supported: true
+  command_type: cancel_reservation</code></pre>
+
+<h3>107.3 · Approval type manifest example</h3>
+
+<pre data-lang="yaml"><code>name: hotel_booking_approval
+version: 1.0.0
+risk_level: high
+required_fields:
+  - hotel_name
+  - check_in_date
+  - check_out_date
+  - guests
+  - total_price
+  - currency
+  - cancellation_policy_summary
+  - payment_method_summary
+decision_values: [approved, rejected, request_changes]
+expiration:
+  default_minutes: 30
+ui:
+  template: hotel_booking_approval_card
+resume:
+  on_approved: continue_workflow
+  on_rejected: fail_or_replan</code></pre>
+
+  </div>
+</details>
+
+<!-- 108 -->
+<details class="section" id="sec-108" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 108</span>
+    <span class="section-title">Registry kernel</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>The Domain Registry is built on a shared kernel that provides generic mechanics. Each typed registry is a thin view over the kernel.</p>
+
+<h3>108.1 · Core kernel objects</h3>
+
+<table class="spec-table">
+  <thead><tr><th>Object</th><th>Carries</th></tr></thead>
+  <tbody>
+    <tr><td><code>RegistryEntity</code></td><td>entity_id, entity_type, name, display_name, description, owner, domain, status</td></tr>
+    <tr><td><code>RegistryVersion</code></td><td>version_id, entity_id, version (major.minor.patch), status, manifest, checksum, created_by, approved_by, lifecycle timestamps</td></tr>
+    <tr><td><code>RegistryArtifact</code></td><td>artifact_id, version_id, artifact_type, artifact_uri, checksum, metadata</td></tr>
+    <tr><td><code>RegistryBinding</code></td><td>binding_id, version_id, binding_scope, binding_target, environment, status, rollout_strategy, rollout_config</td></tr>
+    <tr><td><code>RegistryLifecycleEvent</code></td><td>lifecycle_event_id, entity_id, version_id, event_type, actor, payload, trace_id</td></tr>
+    <tr><td><code>RegistryRelationship</code></td><td>source_version_id, relationship_type, target_entity_type, target_entity_name, target_version_constraint, metadata</td></tr>
+  </tbody>
+</table>
+
+<h3>108.2 · Relationship types</h3>
+
+<div class="pill-grid">
+  <div class="pill">uses_tool</div>
+  <div class="pill">creates_command_type</div>
+  <div class="pill">requires_policy</div>
+  <div class="pill">requires_approval_type</div>
+  <div class="pill">produces_artifact_schema</div>
+  <div class="pill">reads_memory_schema</div>
+  <div class="pill">writes_memory_schema</div>
+  <div class="pill">invokes_connector_operation</div>
+  <div class="pill">allows_agent_role</div>
+  <div class="pill">includes_agent_role</div>
+  <div class="pill">requires_evaluation_suite</div>
+  <div class="pill">uses_workflow_type</div>
+</div>
+
+  </div>
+</details>
+
+<!-- 109 -->
+<details class="section" id="sec-109" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 109</span>
+    <span class="section-title">Data model</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>Hybrid schema — generic kernel tables, with optional typed domain tables (<code>skill_capabilities</code>, <code>tool_contracts</code>, <code>connector_operations</code>, etc.) when query patterns warrant. This avoids per-type lifecycle duplication while still allowing domain-specific validation.</p>
+
+<h3>109.1 · <code>registry_entities</code></h3>
+
+<pre data-lang="sql"><code>CREATE TABLE IF NOT EXISTS registry_entities (
+  entity_id UUID PRIMARY KEY,
+  entity_type TEXT NOT NULL,       -- 'skill', 'tool', 'connector', 'command_type',
+                                   -- 'policy', 'artifact_schema', 'memory_schema',
+                                   -- 'agent_role', 'swarm_template', 'approval_type',
+                                   -- 'evaluation_suite', 'workflow_type'
+  name TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  description TEXT NULL,
+  owner TEXT NOT NULL,
+  domain TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE(entity_type, name)
+);</code></pre>
+
+<h3>109.2 · <code>registry_versions</code></h3>
+
+<pre data-lang="sql"><code>CREATE TABLE IF NOT EXISTS registry_versions (
+  version_id UUID PRIMARY KEY,
+  entity_id UUID NOT NULL REFERENCES registry_entities(entity_id),
+  version TEXT NOT NULL,
+  version_major INT NOT NULL,
+  version_minor INT NOT NULL,
+  version_patch INT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',  -- draft | validated | pending_approval |
+                                         -- approved | published | deprecated |
+                                         -- retired | rejected
+  risk_level TEXT NOT NULL DEFAULT 'low',
+  manifest JSONB NOT NULL DEFAULT '{}',
+  checksum TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  approved_by TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  validated_at TIMESTAMPTZ NULL,
+  approved_at TIMESTAMPTZ NULL,
+  published_at TIMESTAMPTZ NULL,
+  deprecated_at TIMESTAMPTZ NULL,
+  retired_at TIMESTAMPTZ NULL,
+  UNIQUE(entity_id, version)
+);</code></pre>
+
+<h3>109.3 · <code>registry_artifacts</code> · <code>registry_bindings</code> · <code>registry_lifecycle_events</code></h3>
+
+<pre data-lang="sql"><code>CREATE TABLE IF NOT EXISTS registry_artifacts (
+  registry_artifact_id UUID PRIMARY KEY,
+  version_id UUID NOT NULL REFERENCES registry_versions(version_id),
+  artifact_type TEXT NOT NULL,     -- manifest_yaml | manifest_json | skill_md |
+                                   -- tool_schema | connector_schema | policy_bundle |
+                                   -- prompt_template | eval_suite | example_bundle |
+                                   -- package_archive
+  artifact_uri TEXT NOT NULL,
+  checksum TEXT NOT NULL,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS registry_bindings (
+  registry_binding_id UUID PRIMARY KEY,
+  version_id UUID NOT NULL REFERENCES registry_versions(version_id),
+  binding_scope TEXT NOT NULL,     -- global | environment | app | tenant | team |
+                                   -- user | agent_role | agent_name | workflow_type |
+                                   -- command_type | connector
+  binding_target TEXT NOT NULL,
+  environment TEXT NOT NULL DEFAULT 'prod',
+  status TEXT NOT NULL DEFAULT 'active',
+  rollout_strategy TEXT NOT NULL DEFAULT 'pinned',
+  rollout_config JSONB NOT NULL DEFAULT '{}',
+  created_by TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS registry_lifecycle_events (
+  registry_lifecycle_event_id UUID PRIMARY KEY,
+  entity_id UUID NOT NULL REFERENCES registry_entities(entity_id),
+  version_id UUID NULL REFERENCES registry_versions(version_id),
+  event_type TEXT NOT NULL,
+  actor TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}',
+  trace_id TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+<h3>109.4 · <code>registry_relationships</code> · <code>registry_evaluations</code> · <code>registry_usage</code></h3>
+
+<pre data-lang="sql"><code>CREATE TABLE IF NOT EXISTS registry_relationships (
+  registry_relationship_id UUID PRIMARY KEY,
+  source_version_id UUID NOT NULL REFERENCES registry_versions(version_id),
+  relationship_type TEXT NOT NULL,
+  target_entity_type TEXT NOT NULL,
+  target_entity_name TEXT NOT NULL,
+  target_version_constraint TEXT NULL,
+  required BOOLEAN NOT NULL DEFAULT true,
+  metadata JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS registry_evaluations (
+  registry_evaluation_id UUID PRIMARY KEY,
+  version_id UUID NOT NULL REFERENCES registry_versions(version_id),
+  evaluation_type TEXT NOT NULL,
+  status TEXT NOT NULL,
+  result JSONB NOT NULL DEFAULT '{}',
+  error TEXT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  completed_at TIMESTAMPTZ NULL
+);
+
+CREATE TABLE IF NOT EXISTS registry_usage (
+  registry_usage_id UUID PRIMARY KEY,
+  version_id UUID NOT NULL REFERENCES registry_versions(version_id),
+  agent_run_id UUID NULL,
+  swarm_run_id UUID NULL,
+  command_id UUID NULL,
+  workflow_run_id UUID NULL,
+  usage_type TEXT NOT NULL,        -- resolved_for_agent_run | tool_enabled |
+                                   -- command_proposed | connector_operation_enabled |
+                                   -- memory_read_enabled | memory_write_proposed |
+                                   -- artifact_created | subagent_spawn_enabled |
+                                   -- policy_applied | approval_type_used
+  payload JSONB NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);</code></pre>
+
+  </div>
+</details>
+
+<!-- 110 -->
+<details class="section" id="sec-110" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 110</span>
+    <span class="section-title">Versioning</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>All behavior-affecting registry objects use semantic versioning (<code>MAJOR.MINOR.PATCH</code>).</p>
+
+<div class="card-grid">
+  <div class="card"><div class="card-num">Patch</div><h4 class="card-name">Doc / cosmetic</h4><p class="card-desc">Documentation improvements, examples added, prompt wording changes that preserve behavior, bug fixes that preserve contract.</p></div>
+  <div class="card"><div class="card-num">Minor</div><h4 class="card-name">Additive</h4><p class="card-desc">New optional capability, new optional field, new optional eval, backward-compatible schema expansion.</p></div>
+  <div class="card"><div class="card-num">Major</div><h4 class="card-name">Breaking</h4><p class="card-desc">Changed input or output contract, removed capability, expanded connector scope, changed memory scope, changed approval behavior, changed artifact schema incompatibly, changed side-effect semantics.</p></div>
+</div>
+
+  </div>
+</details>
+
+<!-- 111 -->
+<details class="section" id="sec-111" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 111</span>
+    <span class="section-title">Lifecycle</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<h3>111.1 · Standard lifecycle</h3>
+
+<pre data-lang="text"><code>create registry version
+→ validate manifest
+→ validate relationships
+→ validate compatibility
+→ run evals
+→ classify risk
+→ request approval if needed
+→ publish
+→ bind to scopes
+→ monitor usage
+→ deprecate
+→ retire</code></pre>
+
+<h3>111.2 · State machine</h3>
+
+<div class="pill-grid">
+  <div class="pill">draft</div>
+  <div class="pill">validated</div>
+  <div class="pill">pending_approval</div>
+  <div class="pill">approved</div>
+  <div class="pill">published</div>
+  <div class="pill">deprecated</div>
+  <div class="pill">retired</div>
+  <div class="pill">rejected</div>
+</div>
+
+<h3>111.3 · High-risk lifecycle</h3>
+
+<p>High-risk objects require explicit approval before publication. High-risk changes include external write added · memory write added · payment operation added · database mutation added · subagent spawning added · connector scope expanded · approval requirement removed · artifact schema changed incompatibly · policy weakened.</p>
+
+<h3>111.4 · Emergency retirement</h3>
+
+<div class="callout warn">
+  <div class="callout-label">Triggered by</div>
+  <p>Security vulnerability · unsafe connector behavior · approval bypass · prompt-injection vulnerability · data leakage · memory corruption · payment-related defect.</p>
+</div>
+
+<p>Emergency retirement blocks new resolution, disables or migrates active bindings, notifies owners, writes lifecycle events, and creates an incident audit.</p>
+
+  </div>
+</details>
+
+<!-- 112 -->
+<details class="section" id="sec-112" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 112</span>
+    <span class="section-title">Bindings &amp; resolution</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<h3>112.1 · Binding strategies</h3>
+
+<div class="pill-grid">
+  <div class="pill">pinned</div>
+  <div class="pill">latest_patch</div>
+  <div class="pill">latest_minor</div>
+  <div class="pill">canary</div>
+  <div class="pill">percentage</div>
+  <div class="pill">tenant_allowlist</div>
+  <div class="pill">environment_specific</div>
+  <div class="pill">manual</div>
+</div>
+
+<div class="callout rule">
+  <div class="callout-label">Production default</div>
+  <p><code>pinned</code>. Avoid production bindings to unbounded <code>latest</code> — silent updates of behavior-changing manifests are a class of incident no team wants.</p>
+</div>
+
+<h3>112.2 · Resolution inputs</h3>
+
+<p>Resolution accepts entity_type, scope, target, environment, agent_role, agent_name, user_id, team_id, tenant_id, app_id, workflow_type, command_type, and context. It applies the precedence order from §106.4.</p>
+
+<h3>112.3 · Resolution output</h3>
+
+<p>Examples: runtime skill manifest · allowed tool list · connector operation contract · command type contract · policy bundle · approval packet schema · artifact schema · memory access contract · agent role manifest · swarm template manifest.</p>
+
+<h3>112.4 · Runtime manifest for an AgentRun</h3>
+
+<pre data-lang="json"><code>{
+  "agent_run_id": "agent_run_123",
+  "agent_role": "hotel_booking_agent",
+  "skills": [
+    {
+      "name": "hotel_booking",
+      "version": "1.4.2",
+      "skill_version_id": "uuid",
+      "instructions_ref": "artifact://...",
+      "tools": [
+        { "name": "create_booking_draft", "command_type": "create_booking_draft", "mode": "async" },
+        { "name": "book_hotel", "command_type": "book_hotel", "mode": "approval_gated_async" }
+      ],
+      "memory_scope": {
+        "read":  ["user.travel_preferences"],
+        "write": ["user.travel_preferences"]
+      },
+      "artifact_scope": {
+        "write": ["booking_draft", "reservation_confirmation"]
+      }
+    }
+  ]
+}</code></pre>
+
+  </div>
+</details>
+
+<!-- 113 -->
+<details class="section" id="sec-113" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 113</span>
+    <span class="section-title">DBOS lifecycle workflows</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>Registry lifecycle runs as DBOS workflows — durable, recoverable, idempotent.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-num">Workflow</div>
+    <h4 class="card-name"><code>publish_registry_version</code></h4>
+    <p class="card-desc">load version → validate manifest → validate relationships → validate compatibility → run eval suite → classify risk → request approval if needed → publish → write lifecycle events → notify owner.</p>
+  </div>
+  <div class="card">
+    <div class="card-num">Workflow</div>
+    <h4 class="card-name"><code>bind_registry_version</code></h4>
+    <p class="card-desc">load version → check status is published → validate binding scope → check compatibility → write binding → write lifecycle event → invalidate resolution cache.</p>
+  </div>
+  <div class="card">
+    <div class="card-num">Workflow</div>
+    <h4 class="card-name"><code>rollback_registry_binding</code></h4>
+    <p class="card-desc">load current binding → load target prior version → validate target is usable → update binding → write lifecycle event → notify affected owners.</p>
+  </div>
+  <div class="card">
+    <div class="card-num">Workflow</div>
+    <h4 class="card-name"><code>retire_registry_version</code></h4>
+    <p class="card-desc">load version → find active bindings → disable or migrate bindings → mark retired → write lifecycle event → notify owners.</p>
+  </div>
+  <div class="card">
+    <div class="card-num">Workflow</div>
+    <h4 class="card-name"><code>resolve_agent_runtime_manifest</code></h4>
+    <p class="card-desc">load active bindings → apply precedence → filter by policy → validate compatibility → resolve relationships → build minimized manifest → record usage.</p>
+  </div>
+</div>
+
+  </div>
+</details>
+
+<!-- 114 -->
+<details class="section" id="sec-114" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 114</span>
+    <span class="section-title">Policy &amp; governance</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>The Domain Registry evaluates:</p>
+
+<ul>
+  <li>Can this agent use this skill?</li>
+  <li>Can this skill expose this tool?</li>
+  <li>Can this tool create this command type?</li>
+  <li>Can this command type invoke this connector operation?</li>
+  <li>Can this command type produce this artifact?</li>
+  <li>Can this skill read / write this memory?</li>
+  <li>Can this agent spawn this subagent?</li>
+  <li>Can this workflow use this swarm template?</li>
+  <li>Does this capability require approval?</li>
+  <li>Is this version deprecated or retired?</li>
+  <li>Is this version allowed in this environment?</li>
+</ul>
+
+<div class="callout rule">
+  <div class="callout-label">Registry changes are commands</div>
+  <p>Registry mutations themselves go through the Concord command contract: <code>create_registry_entity</code>, <code>create_registry_version</code>, <code>validate_registry_version</code>, <code>publish_registry_version</code>, <code>bind_registry_version</code>, <code>deprecate_registry_version</code>, <code>retire_registry_version</code>, <code>rollback_registry_binding</code>. Policy applies, audit records, approval gates trigger.</p>
+</div>
+
+  </div>
+</details>
+
+<!-- 115 -->
+<details class="section" id="sec-115" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 115</span>
+    <span class="section-title">API surface</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<pre data-lang="python"><code>def create_registry_entity(
+    entity_type: str, name: str, display_name: str,
+    owner: str, description: str | None = None, domain: str | None = None,
+) -> str: ...
+
+def create_registry_version(
+    entity_type: str, name: str, version: str,
+    manifest: dict, artifact_refs: list[dict], created_by: str,
+) -> str: ...
+
+def validate_registry_version(version_id: str, actor: str) -> dict: ...
+
+def publish_registry_version(version_id: str, actor: str) -> dict: ...
+
+def bind_registry_version(
+    version_id: str, binding_scope: str, binding_target: str,
+    environment: str, actor: str,
+    rollout_strategy: str = "pinned", rollout_config: dict | None = None,
+) -> str: ...
+
+def resolve_agent_runtime_manifest(
+    agent_run_id: str, agent_name: str, agent_role: str,
+    context: dict, environment: str,
+) -> dict: ...
+
+def resolve_command_type_contract(
+    command_type: str, context: dict, environment: str,
+) -> dict: ...
+
+def can_use_capability(
+    source_version_id: str, relationship_type: str,
+    target_entity_type: str, target_entity_name: str, context: dict,
+) -> bool: ...
+
+def rollback_registry_binding(
+    binding_id: str, target_version_id: str, actor: str, reason: str,
+) -> dict: ...</code></pre>
+
+  </div>
+</details>
+
+<!-- 116 -->
+<details class="section" id="sec-116" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 116</span>
+    <span class="section-title">Admin UX</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p>The admin UI should support listing entities by type, viewing and comparing versions, viewing manifests / relationships / declared capabilities / risk level / eval results, publishing, approving high-risk versions, binding to scopes, viewing active bindings, rolling back, deprecating, retiring, viewing lifecycle timelines, viewing usage, performing impact analysis, and previewing runtime manifests.</p>
+
+<h3>116.1 · Critical views</h3>
+
+<div class="pill-grid">
+  <div class="pill">Domain registry dashboard</div>
+  <div class="pill">Entity detail</div>
+  <div class="pill">Version detail</div>
+  <div class="pill">Relationship graph</div>
+  <div class="pill">Binding detail</div>
+  <div class="pill">Risk review</div>
+  <div class="pill">Eval results</div>
+  <div class="pill">Usage graph</div>
+  <div class="pill">Runtime manifest preview</div>
+  <div class="pill">Impact analysis</div>
+</div>
+
+  </div>
+</details>
+
+<!-- 117 -->
+<details class="section" id="sec-117" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 117</span>
+    <span class="section-title">Observability</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<h3>117.1 · Tracked behaviors</h3>
+
+<p>Versions resolved per entity type, versions used per command type, skills resolved per agent role, tools enabled per skill, connector operations invoked per tool, policies applied per command type, artifacts produced per command type, memory writes by skill, deprecated version usage, retired version resolution attempts, rollback frequency.</p>
+
+<h3>117.2 · Metrics</h3>
+
+<div class="pill-grid">
+  <div class="pill">registry_version_publish_count</div>
+  <div class="pill">registry_resolution_count</div>
+  <div class="pill">registry_resolution_latency_ms</div>
+  <div class="pill">registry_eval_failure_count</div>
+  <div class="pill">registry_binding_rollback_count</div>
+  <div class="pill">deprecated_version_usage_count</div>
+  <div class="pill">retired_version_block_count</div>
+  <div class="pill">high_risk_approval_count</div>
+  <div class="pill">impact_analysis_count</div>
+</div>
+
+  </div>
+</details>
+
+<!-- 118 -->
+<details class="section" id="sec-118" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 118</span>
+    <span class="section-title">Implementation plan</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<div class="diagram">
+  <span class="diagram-label">Phases</span>
+  <div class="mermaid">
+flowchart LR
+  P1["Phase 1<br/>Registry kernel"] --> P2["Phase 2<br/>Core domain registries"]
+  P2 --> P3["Phase 3<br/>Relationship graph"]
+  P3 --> P4["Phase 4<br/>Evals &amp; rollout"]
+  P4 --> P5["Phase 5<br/>Swarm-aware registry"]
+  P5 --> P6["Phase 6<br/>Optional extraction"]
+  style P1 fill:#FAF8F2,stroke:#141413
+  style P6 fill:#F1F2EC,stroke:#6B7B5A
+  </div>
+</div>
+
+<div class="card-grid">
+  <div class="card"><div class="card-num">Phase 1</div><h4 class="card-name">Registry kernel</h4><p class="card-desc">Kernel tables, basic lifecycle, publish, bind, resolve, rollback. Entities supported: skill · tool · connector · command_type.</p></div>
+  <div class="card"><div class="card-num">Phase 2</div><h4 class="card-name">Core domain registries</h4><p class="card-desc">Add: policy · artifact schema · memory schema · agent role · approval type. Add relationship validation, runtime manifest generation, capability filtering, risk classification, high-risk approval workflow.</p></div>
+  <div class="card"><div class="card-num">Phase 3</div><h4 class="card-name">Relationship graph</h4><p class="card-desc">Add: <code>registry_relationships</code>, impact analysis, dependency resolution, version compatibility checks, graph visualization.</p></div>
+  <div class="card"><div class="card-num">Phase 4</div><h4 class="card-name">Evals &amp; rollout</h4><p class="card-desc">Add: <code>registry_evaluations</code>, eval suites, canary rollout, compatibility checks, deprecation warnings, usage tracking.</p></div>
+  <div class="card"><div class="card-num">Phase 5</div><h4 class="card-name">Swarm-aware registry</h4><p class="card-desc">Add: swarm template + evaluation suite + workflow type registries, subagent skill constraints, parent-child scope inheritance, join-strategy compatibility.</p></div>
+  <div class="card"><div class="card-num">Phase 6</div><h4 class="card-name">Optional extraction</h4><p class="card-desc">If the kernel stabilizes, extract <code>concord-registry</code> as a reusable library. Keep Concord-specific domain semantics in Concord.</p></div>
+</div>
+
+  </div>
+</details>
+
+<!-- 119 -->
+<details class="section" id="sec-119" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 119</span>
+    <span class="section-title">Acceptance criteria</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<h3>119.1 · Functional · v1</h3>
+
+<ul>
+  <li>Create registry entity.</li>
+  <li>Create registry version.</li>
+  <li>Validate manifest.</li>
+  <li>Publish version.</li>
+  <li>Bind version to scope.</li>
+  <li>Resolve version by scope.</li>
+  <li>Resolve skills / tools / connectors / command types for an AgentRun.</li>
+  <li>Prevent retired version from resolving.</li>
+  <li>Write lifecycle events.</li>
+  <li>Rollback binding.</li>
+</ul>
+
+<h3>119.2 · Technical · v1</h3>
+
+<ul>
+  <li>All registry writes are audited.</li>
+  <li>Published versions are immutable.</li>
+  <li>Runtime manifests exclude disallowed capabilities.</li>
+  <li>DBOS lifecycle workflows run idempotently.</li>
+  <li>High-risk registry changes are blocked without approval.</li>
+  <li>Resolution is deterministic.</li>
+  <li>Postgres is the source of truth.</li>
+</ul>
+
+  </div>
+</details>
+
+<!-- 120 -->
+<details class="section" id="sec-120" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 120</span>
+    <span class="section-title">Open questions</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<ol>
+  <li>How generic should the registry kernel be in v1?</li>
+  <li>Should typed domain tables exist immediately, or are manifests + relationships sufficient at first?</li>
+  <li>How strict should manifest validation be at first?</li>
+  <li>Should <code>SKILL.md</code> and other large artifacts live in Git, object storage, or Postgres?</li>
+  <li>Should high-risk approval be per version or per binding?</li>
+  <li>How should runtime manifest caching work?</li>
+  <li>How should registry impact analysis be visualized?</li>
+  <li>Should deprecated versions resolve in production?</li>
+  <li>How should active DBOS workflows behave if a registry version is retired mid-run?</li>
+  <li>Should command type contracts be required before any command can run?</li>
+</ol>
+
+  </div>
+</details>
+
+<!-- 121 -->
+<details class="section" id="sec-121" data-part="4" open>
+  <summary class="section-head">
+    <span class="section-num">Section 121</span>
+    <span class="section-title">Final recommendation</span>
+    <span class="chevron" aria-hidden="true"></span>
+  </summary>
+  <div class="section-body">
+
+<p class="lede">Build a new core Concord module <code>concord.registry</code> — the <strong>Concord Domain Registry</strong>, not only a Skills Registry.</p>
+
+<h3>121.1 · The twelve registries</h3>
+
+<div class="pill-grid">
+  <div class="pill">Skill</div>
+  <div class="pill">Tool</div>
+  <div class="pill">Connector</div>
+  <div class="pill">Command type</div>
+  <div class="pill">Policy</div>
+  <div class="pill">Artifact schema</div>
+  <div class="pill">Memory schema</div>
+  <div class="pill">Agent role</div>
+  <div class="pill">Swarm template</div>
+  <div class="pill">Approval type</div>
+  <div class="pill">Evaluation suite</div>
+  <div class="pill">Workflow type</div>
+</div>
+
+<h3>121.2 · On a shared kernel</h3>
+
+<div class="pill-grid">
+  <div class="pill">versioned records</div>
+  <div class="pill">lifecycle state machine</div>
+  <div class="pill">artifact references</div>
+  <div class="pill">immutable published versions</div>
+  <div class="pill">generic bindings</div>
+  <div class="pill">scope resolution</div>
+  <div class="pill">relationship graph</div>
+  <div class="pill">compatibility checks</div>
+  <div class="pill">audit event helpers</div>
+  <div class="pill">rollback</div>
+  <div class="pill">deprecation</div>
+  <div class="pill">retirement</div>
+</div>
+
+<h3>121.3 · The architecture</h3>
+
+<div class="pullquote">
+  <span class="pullquote-line">Concord Core defines the primitive model.</span>
+  <span class="pullquote-line">Concord Registry defines capability contracts.</span>
+  <span class="pullquote-line">DBOS Runtime executes them durably.</span>
+  <span class="pullquote-line">Postgres records the truth.</span>
+</div>
+
+<div class="callout rule">
+  <div class="callout-label">Key framing</div>
+  <p>The Domain Registry is Concord's <strong>capability graph</strong>. Skills are one node type in that graph.</p>
+</div>
+
+  </div>
+</details>
+
 <div class="footer">
   <div class="footer-brand"><span class="brand-mark"></span>Concord</div>
   <div>Architecture · v0.3 — Concord (semantic primitives) · DBOS (durable runtime) · Postgres (system of record).</div>
@@ -7720,7 +8739,8 @@ flowchart LR
       if (!Number.isFinite(n)) return '1';
       if (n <= 51) return '1';
       if (n <= 73) return '2';
-      return '3';
+      if (n <= 102) return '3';
+      return '4';
     }
 
     function setActivePart(part, { scroll = false } = {}) {
