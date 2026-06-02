@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>What Concord is — and what it isn't · Concord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F0EEE6; --panel: #FAF8F2; --panel-2: #F5F1E6;
+    --ink: #141413; --ink-soft: #2C2A28;
+    --muted: #5D5A52; --muted-2: #8A8478;
+    --line: #DDD8CC;
+    --coral: #D97757; --coral-deep: #B85F40; --coral-bg: #FAEEE3;
+    --sage: #6B7B5A; --plum: #7A5560;
+    --code-bg: #F8F5EC; --inline-code: #F0EAD9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 64px 56px 120px; max-width: 1080px; margin-inline: auto;
+    font-family: 'Inter', system-ui, sans-serif; font-size: 16px; line-height: 1.7;
+    color: var(--ink); background: var(--paper);
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  a { color: var(--coral); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:hover { color: var(--coral-deep); }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.86em; padding: 1px 6px; background: var(--inline-code); border-radius: 3px; }
+  pre { margin: 18px 0; padding: 20px 24px; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--ink); white-space: pre; }
+
+  /* Header */
+  header.hero { margin-bottom: 56px; padding-bottom: 40px; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--coral); margin-bottom: 22px;
+  }
+  .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--coral); }
+  header h1 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 56px; font-weight: 400;
+    line-height: 1.05; letter-spacing: -0.025em; margin: 0 0 18px; color: var(--ink); max-width: 760px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 21px; line-height: 1.55;
+    color: var(--muted); margin: 0 0 24px; max-width: 700px;
+  }
+  .lede strong { color: var(--ink); font-weight: 500; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+    color: var(--muted); text-decoration: none; margin-bottom: 24px;
+    transition: color 0.15s ease;
+  }
+  .back-link:hover { color: var(--coral-deep); text-decoration: none; }
+
+  /* Sections */
+  section { margin: 56px 0; }
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 32px; font-weight: 400;
+    line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--ink);
+    padding-bottom: 12px; border-bottom: 1px solid var(--line);
+  }
+  h2 .section-num {
+    display: inline-block; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--coral); margin-right: 14px;
+    vertical-align: middle;
+  }
+  h3 {
+    font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 600;
+    letter-spacing: -0.005em; margin: 28px 0 10px; color: var(--ink);
+  }
+  p { margin: 12px 0; color: var(--ink-soft); }
+  ul, ol { margin: 12px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 6px 0; }
+  ul li::marker { color: var(--coral); }
+
+  /* Callouts */
+  .callout {
+    margin: 22px 0; padding: 16px 20px; border-left: 2px solid var(--coral);
+    background: var(--coral-bg); border-radius: 0 4px 4px 0;
+  }
+  .callout.tip { border-left-color: var(--sage); background: #F1F2EC; }
+  .callout.warn { border-left-color: #B68A2E; background: #F7F1E0; }
+  .callout-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px;
+    color: var(--coral-deep);
+  }
+  .callout.tip .callout-label { color: var(--sage); }
+  .callout.warn .callout-label { color: #936A1D; }
+  .callout p { margin: 0; color: var(--ink); font-size: 15px; }
+  .callout p + p { margin-top: 8px; }
+
+  /* IS / IS NOT split cards */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 28px 0; }
+  .card {
+    padding: 24px 26px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; transition: border-color 0.2s ease;
+  }
+  .card.pos { border-top: 2px solid var(--sage); }
+  .card.neg { border-top: 2px solid #B85556; }
+  .card h3 {
+    margin: 0 0 14px; font-family: 'Inter', sans-serif; font-size: 11px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em;
+  }
+  .card.pos h3 { color: var(--sage); }
+  .card.neg h3 { color: #B85556; }
+  .card ul { margin: 0; padding-left: 18px; }
+  .card li { margin: 7px 0; color: var(--ink-soft); font-size: 14.5px; }
+
+  /* Pill row */
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0; }
+  .pill {
+    padding: 6px 12px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--ink-soft); font-weight: 500;
+  }
+
+  /* Table */
+  table {
+    width: 100%; margin: 22px 0; border-collapse: collapse; font-size: 13.5px;
+    border: 1px solid var(--line); border-radius: 6px; overflow: hidden;
+  }
+  th, td { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: none; }
+  th {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted-2);
+    background: var(--panel);
+  }
+  td:first-child { font-weight: 600; color: var(--ink); }
+  tr:hover td { background: var(--panel-2); }
+
+  /* Complementary grid */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 22px 0; }
+  .mini {
+    padding: 18px 22px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+  .mini h3 {
+    margin: 0 0 8px; font-family: 'Source Serif 4', Georgia, serif; font-size: 18px;
+    font-weight: 500; color: var(--ink); letter-spacing: -0.01em; text-transform: none;
+  }
+  .mini p { margin: 8px 0; font-size: 14px; }
+  .mini pre { margin: 12px 0 0; padding: 12px 14px; font-size: 12px; }
+
+  /* Footnotes */
+  .footnotes { font-size: 13px; color: var(--muted); }
+  .footnotes a { color: var(--coral-deep); }
+  .footnotes ol { padding-left: 22px; }
+  .footnotes li { margin: 6px 0; }
+
+  /* One-slide summary */
+  .summary-card {
+    padding: 28px 32px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; margin: 22px 0;
+  }
+  .summary-card pre {
+    background: transparent; border: none; padding: 0; margin: 0; font-size: 14px; color: var(--ink);
+  }
+
+  @media (max-width: 880px) {
+    body { padding: 36px 22px 80px; }
+    header h1 { font-size: 38px; }
+    .split, .grid2 { grid-template-columns: 1fr; }
+    table { font-size: 12.5px; }
+    th, td { padding: 10px 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <a class="back-link" href="index.html">← Concord architecture spec</a>
+  <div class="eyebrow">Concord positioning</div>
+  <h1>What Concord is — and what it isn't.</h1>
+  <p class="lede">Concord is a <strong>semantic contract layer for governed work</strong>. It sits between applications, agents, connectors, humans, and durable workflow runtimes. It defines what an action means, who or what is allowed to perform it, what state or memory it touches, which artifacts it produces, and how it must be audited.</p>
+
+  <div class="callout">
+    <div class="callout-label">Core thesis</div>
+    <p>DBOS gives durable execution. Postgres gives durable truth. <strong>Concord gives the contract for governed work.</strong></p>
+  </div>
+</header>
+
+<section>
+  <h2><span class="section-num">01</span>Simplest positioning</h2>
+<pre>Agents do not execute directly.
+Agents propose commands.
+Concord governs them.
+DBOS executes them durably.
+Postgres records the truth.</pre>
+  <p>Concord is not trying to be an agent framework, a workflow engine, a BPM suite, a policy engine, a connector marketplace, or an observability product. It is the semantic contract layer that coordinates those systems under one governed action model.</p>
+</section>
+
+<section class="split">
+  <div class="card pos">
+    <h3>Concord is</h3>
+    <ul>
+      <li>A semantic action contract layer.</li>
+      <li>A functional-core primitive model.</li>
+      <li>A governance layer for deterministic and agentic workflows.</li>
+      <li>A domain model for commands, policies, approvals, memory, artifacts, connectors, agents, swarms, and audit.</li>
+      <li>A way to make agent actions durable, reviewable, and policy-checked.</li>
+      <li>A way to standardize connector writes and external side effects.</li>
+      <li>A Postgres-first record of domain truth.</li>
+    </ul>
+  </div>
+  <div class="card neg">
+    <h3>Concord is not</h3>
+    <ul>
+      <li>Not a workflow runtime — DBOS owns durable execution.</li>
+      <li>Not an agent framework — agent runtimes plug into Concord.</li>
+      <li>Not a BPM platform — it represents approvals/processes but is developer-native and app-local.</li>
+      <li>Not a policy engine — it can call one, but its role is the action contract.</li>
+      <li>Not an observability tool — it produces domain audit and trace records.</li>
+      <li>Not a connector marketplace — it defines connector contracts and governance.</li>
+      <li>Not a replacement for DBOS, Temporal, LangGraph, Harness, Camunda, Airflow, or OPA.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="section-num">02</span>Concord primitives</h2>
+  <p>Concord standardizes work as a small set of durable, composable primitives.</p>
+  <div class="pill-row">
+    <span class="pill">Command</span>
+    <span class="pill">Policy</span>
+    <span class="pill">Plan</span>
+    <span class="pill">Approval</span>
+    <span class="pill">Memory</span>
+    <span class="pill">Artifact</span>
+    <span class="pill">Connector invocation</span>
+    <span class="pill">Agent run</span>
+    <span class="pill">Swarm run</span>
+    <span class="pill">Domain event</span>
+  </div>
+  <p>Audit, business events, and agent-step traces all live in one unified <code>domain_events</code> table, disambiguated by a <code>purpose</code> column. The same row schema serves compliance, product UX, and observability.</p>
+
+<pre>Any consequential action becomes:
+
+Ingress
+→ Command
+→ Context
+→ Policy
+→ Plan
+→ DBOS workflow / step
+→ Artifact / Memory / Approval / Notification
+→ Domain event (purpose: audit)</pre>
+</section>
+
+<section>
+  <h2><span class="section-num">03</span>Comparison across adjacent categories</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Examples</th>
+        <th>What they do</th>
+        <th>Overlap with Concord</th>
+        <th>Complementary role</th>
+        <th>Where Concord shines</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Durable runtime</td>
+        <td>DBOS, Temporal</td>
+        <td>Durable workflows, retries, steps/activities, timers, queues, recovery.</td>
+        <td>High — execution semantics, workflow state, retries, idempotency, long-running work.</td>
+        <td>DBOS is Concord's default runtime today. Temporal is the named future adapter for native saga compensation and workflow versioning capabilities.</td>
+        <td>Concord defines command, policy, approval, memory, artifact, connector, agent, and audit semantics <em>above</em> the runtime.</td>
+      </tr>
+      <tr>
+        <td>Agent frameworks &amp; harnesses</td>
+        <td>LangGraph, CrewAI, AutoGen, custom loops</td>
+        <td>Run agents — tools, context, memory, planning, subagents, traces, human-in-the-loop.</td>
+        <td>High around <code>AgentRun</code>, <code>AgentStep</code>, tool calls, subagents, swarms.</td>
+        <td>Agent runtimes plug in as adapters inside Concord.</td>
+        <td>Concord ensures agents <em>propose</em> governed commands instead of directly executing side effects.</td>
+      </tr>
+      <tr>
+        <td>BPM / process orchestration</td>
+        <td>Camunda, Flowable, Pega</td>
+        <td>Model business processes, human tasks, rules, assignments, forms, enterprise visibility.</td>
+        <td>Medium — approvals, state machines, human tasks, process governance.</td>
+        <td>Useful for heavyweight enterprise process management; can be downstream or alternative for approval-heavy processes.</td>
+        <td>Concord is lighter, developer-native, app-local, Postgres-first, and agent/connector/memory-aware.</td>
+      </tr>
+      <tr>
+        <td>DevOps / SDLC platforms</td>
+        <td>Harness, GitHub Actions, GitLab CI/CD</td>
+        <td>Build, test, secure, deploy, and operate software-delivery pipelines.</td>
+        <td>Medium — pipelines, approvals, connectors, policy, audit, triggers.</td>
+        <td>Can be invoked <em>by</em> Concord as a connector for deployment or software-delivery commands.</td>
+        <td>Concord applies the same command contract to non-SDLC actions: bookings, memory writes, reports, agent swarms, external business side effects.</td>
+      </tr>
+      <tr>
+        <td>Policy engines</td>
+        <td>OPA, Cedar, custom rules</td>
+        <td>Evaluate allow/deny decisions and policy-as-code.</td>
+        <td>Medium around <code>Policy</code>.</td>
+        <td>Concord can call a policy engine to evaluate checks.</td>
+        <td>Concord wraps policy into a larger contract: command + plan + approval + artifact + memory + connector scope + audit + execution.</td>
+      </tr>
+      <tr>
+        <td>Data &amp; DAG orchestrators</td>
+        <td>Airflow, Dagster, Prefect</td>
+        <td>Schedule and run data pipelines, DAGs, assets, task dependencies.</td>
+        <td>Medium — tasks, dependencies, schedules, retries.</td>
+        <td>Can be invoked <em>by</em> Concord as an execution connector for data workflows.</td>
+        <td>Concord covers app actions, agents, memory, approvals, connector governance, and domain artifacts beyond data DAGs.</td>
+      </tr>
+      <tr>
+        <td>Observability &amp; eval platforms</td>
+        <td>LangSmith, OpenTelemetry tools, agent-eval systems</td>
+        <td>Trace, debug, evaluate, and monitor agent or application behavior.</td>
+        <td>Medium — traces, agent steps, audit, evaluation.</td>
+        <td>Concord can export traces and audit events to these tools.</td>
+        <td>Concord records domain <em>meaning</em>, not just runtime spans or model traces.</td>
+      </tr>
+      <tr>
+        <td>Connector / iPaaS platforms</td>
+        <td>Zapier, Workato, n8n, custom connectors</td>
+        <td>Connect applications and automate operations across SaaS tools.</td>
+        <td>Medium around <code>ConnectorInvocation</code> and triggers.</td>
+        <td>Can provide connectors or downstream automations.</td>
+        <td>Concord governs connector authority, idempotency, approval, artifacts, and audit as part of one action contract.</td>
+      </tr>
+      <tr>
+        <td>Memory &amp; retrieval systems</td>
+        <td>Vector DBs, RAG frameworks, user-preference stores</td>
+        <td>Store and retrieve semantic context or preferences.</td>
+        <td>Medium around <code>Memory</code>.</td>
+        <td>Concord can use them as storage/retrieval adapters via the <code>MemoryStore</code> protocol.</td>
+        <td>Concord governs memory reads/writes with scope, consent, confidence, supersession, and audit.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="section-num">04</span>Where Concord overlaps</h2>
+  <table>
+    <thead><tr><th>Overlap area</th><th>Concord stance</th></tr></thead>
+    <tbody>
+      <tr><td>Workflows</td><td>Concord defines what the workflow <em>means</em>; DBOS executes it.</td></tr>
+      <tr><td>Queues</td><td>Concord declares semantic queue names (<code>connector_calls</code>, <code>agent_runs</code>, <code>swarm_children</code>, <code>notifications</code>, …); the runtime owns claim, lease, concurrency, and rate limit.</td></tr>
+      <tr><td>Approvals</td><td>Concord defines the approval packet, risk, approver, and domain state; the runtime handles durable waiting.</td></tr>
+      <tr><td>Agent tools</td><td>Agent frameworks expose tools; Concord turns each tool call into a governed command.</td></tr>
+      <tr><td>Policy</td><td>OPA / Cedar / custom rules may evaluate decisions; Concord decides <em>when</em> policy applies and <em>what happens</em> after the decision.</td></tr>
+      <tr><td>Observability</td><td>Tracing tools show execution; Concord records domain audit and action meaning.</td></tr>
+      <tr><td>Connectors</td><td>Connector systems perform integrations; Concord governs connector operations, scopes, side effects, and artifacts.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="section-num">05</span>Where Concord is complementary</h2>
+  <div class="grid2">
+    <div class="mini">
+      <h3>DBOS</h3>
+      <p>DBOS is not a competitor — it's the intended runtime. DBOS gives Concord durable workflows, steps, queues, retries, schedules, workflow IDs, durable sleep, and Postgres-backed execution semantics.</p>
+<pre>Concord = what work means
+DBOS    = how work runs durably</pre>
+    </div>
+    <div class="mini">
+      <h3>LangGraph / agent runtimes</h3>
+      <p>Agent frameworks run the reasoning loop. Concord wraps the loop with action governance: every tool call, memory write, connector write, or subagent spawn becomes a governed command.</p>
+<pre>Agent runtime = decides / proposes
+Concord       = governs
+DBOS          = executes</pre>
+    </div>
+    <div class="mini">
+      <h3>Harness / DevOps systems</h3>
+      <p>Harness can be a downstream connector. Concord governs a <code>deploy_service</code> command, then calls Harness to execute a delivery pipeline.</p>
+<pre>Concord command: deploy_service
+→ policy
+→ connector: harness.start_pipeline
+→ audit</pre>
+    </div>
+    <div class="mini">
+      <h3>OPA / policy engines</h3>
+      <p>Concord can call a policy engine, but policy output is one part of the action contract. Concord also decides approval, plan, artifact, memory, connector scope, and audit semantics.</p>
+<pre>Policy engine = decision
+Concord       = decision + consequence</pre>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="section-num">06</span>Where Concord shines</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Agent governance.</strong> Agents propose commands instead of directly executing side effects.</li>
+      <li><strong>Unified deterministic + agentic model.</strong> A sync function, async job, connector call, memory write, and subagent spawn share one contract.</li>
+      <li><strong>Postgres-first domain truth.</strong> Business state, artifacts, approvals, memory, connector invocations, agent steps, and audit records are durable and queryable.</li>
+      <li><strong>Approval semantics.</strong> Approval is a typed domain object with risk, packet, approver, state, and audit — never just a Slack message.</li>
+      <li><strong>Memory governance.</strong> Memory writes are scoped, consented, auditable, and reversible. Storage backend is pluggable via the <code>MemoryStore</code> protocol.</li>
+      <li><strong>Connector safety.</strong> External side effects have operation contracts, idempotency keys, scopes, approval rules, and artifact outputs.</li>
+      <li><strong>Swarm governance.</strong> Subagent spawning is bounded by depth, tool scope, connector scope, memory scope, cost, and approval rules. Children obey <code>child_scope ⊆ parent_scope</code>.</li>
+      <li><strong>Domain audit.</strong> Concord records what happened in business terms, not only runtime spans or workflow logs.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="section-num">07</span>The defensible novelty claim</h2>
+  <div class="callout warn">
+    <div class="callout-label">Avoid overclaiming</div>
+    <p>Do not claim that no one has workflows, policies, approvals, connectors, agents, memory, or audit. Many systems have those pieces.</p>
+  </div>
+  <p>The stronger claim is:</p>
+<pre>No one has a clean, developer-native contract layer for governed work
+that unifies deterministic execution, agentic execution, connectors,
+memory, approvals, artifacts, audit, and swarms on top of a durable runtime.</pre>
+  <p>Concord's novelty is <em>not any single primitive</em>. The novelty is the unified contract and enforcement boundary.</p>
+</section>
+
+<section>
+  <h2><span class="section-num">08</span>Example · hotel reservation</h2>
+  <p>A concrete illustration of the contract layer in action. The full worked Concord design for this flow is at <a href="examples/hotel-booking.html" target="_blank" rel="noopener">examples/hotel-booking.html ↗</a>.</p>
+  <table>
+    <thead><tr><th>Action</th><th>Without Concord</th><th>With Concord</th></tr></thead>
+    <tbody>
+      <tr><td>Search hotels</td><td>Agent calls a search tool.</td><td>Agent proposes <code>search_hotels</code>; Concord checks connector scope; DBOS executes the connector step; results recorded as an artifact.</td></tr>
+      <tr><td>Rank options</td><td>Agent returns a ranked list.</td><td>Ranking output becomes a typed artifact with lineage and audit.</td></tr>
+      <tr><td>Remember preference</td><td>Agent writes memory ad hoc.</td><td>Agent proposes a memory candidate; Concord checks consent, scope, confidence, and conflicts before commit.</td></tr>
+      <tr><td>Book hotel</td><td>Agent calls the booking tool after user says yes.</td><td>Concord creates an approval packet for &gt;$500 bookings; verifies terms / payment / cancellation; DBOS executes the booking step durably with an idempotency key.</td></tr>
+      <tr><td>Cancel reservation</td><td>Agent calls the cancellation tool.</td><td>Cancel is itself a command; runs the declared compensation (<code>cancel_reservation</code>) against the original <code>book_hotel</code> effect; audit captures who, when, what was undone.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="section-num">09</span>Naming and category</h2>
+  <p>Concord should not be described merely as a workflow engine or an agent framework. The best category is:</p>
+<pre>Semantic contract layer for governed work</pre>
+  <p>Alternative phrases that work:</p>
+  <ul>
+    <li>Governed action contract layer</li>
+    <li>Semantic workflow primitive layer</li>
+    <li>Contract layer for agentic and deterministic work</li>
+    <li>Postgres-backed governance model for app actions</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="section-num">10</span>One-slide summary</h2>
+  <div class="summary-card">
+<pre>Concord is the missing contract layer between apps, agents, connectors,
+humans, and durable workflow runtimes.
+
+DBOS runs work.
+Postgres records truth.
+Agent frameworks reason.
+Connectors integrate.
+Policy engines decide.
+
+Concord defines the governed action contract that binds them together.</pre>
+  </div>
+</section>
+
+<section>
+  <h2><span class="section-num">11</span>Source notes</h2>
+  <p class="footnotes">These references ground the comparison categories. Concord's positioning is an architectural interpretation, not a claim that these systems cannot be extended to cover similar ideas.</p>
+  <ol class="footnotes">
+    <li><a href="https://docs.dbos.dev/python/tutorials/workflow-tutorial" target="_blank" rel="noopener">DBOS workflow tutorial</a></li>
+    <li><a href="https://docs.dbos.dev/python/tutorials/queue-tutorial" target="_blank" rel="noopener">DBOS queues &amp; concurrency</a></li>
+    <li><a href="https://docs.temporal.io/workflow-execution" target="_blank" rel="noopener">Temporal workflow execution</a></li>
+    <li><a href="https://docs.langchain.com/oss/python/langgraph/overview" target="_blank" rel="noopener">LangGraph overview</a></li>
+    <li><a href="https://developer.harness.io/docs/platform/" target="_blank" rel="noopener">Harness platform</a></li>
+    <li><a href="https://docs.camunda.io/docs/components/modeler/bpmn/user-tasks/" target="_blank" rel="noopener">Camunda user tasks</a></li>
+    <li><a href="https://www.openpolicyagent.org/docs" target="_blank" rel="noopener">Open Policy Agent</a></li>
+    <li><a href="https://airflow.apache.org/docs/apache-airflow/stable/core-concepts/dags.html" target="_blank" rel="noopener">Apache Airflow — DAGs</a></li>
+  </ol>
+</section>
+
+</body>
+</html>
