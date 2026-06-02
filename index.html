@@ -1774,22 +1774,22 @@ flowchart TB
   <span class="diagram-label">Branching decisions</span>
   <div class="mermaid">
 flowchart LR
-  Q{Needs immediate answer?} -->|yes| SYNC[sync function]
-  Q -->|no| LONG{Long-running?}
-  LONG -->|yes| ASYNC[queue → async task → worker]
-  LONG -->|no| EXT{External system?}
+  Q{"Needs immediate answer?"} -->|yes| SYNC[sync function]
+  Q -->|no| LONG{"Long-running?"}
+  LONG -->|yes| ASYNC["queue → async task → worker"]
+  LONG -->|no| EXT{"External system?"}
   EXT -->|yes| CC[connector call]
-  EXT -->|no| HJ{Human judgment?}
-  HJ -->|yes| AP[approval request → decision → resume]
-  HJ -->|no| FR{Future recall?}
+  EXT -->|no| HJ{"Human judgment?"}
+  HJ -->|yes| AP["approval request → decision → resume"]
+  HJ -->|no| FR{"Future recall?"}
   FR -->|yes| MEM[memory write]
-  FR -->|no| DR{Durable result?}
+  FR -->|no| DR{"Durable result?"}
   DR -->|yes| ART[artifact write]
-  DR -->|no| NOT{Notify?}
+  DR -->|no| NOT{"Notify?"}
   NOT -->|yes| NOTIF[notification]
-  NOT -->|no| FAIL{Fails after side effects?}
+  NOT -->|no| FAIL{"Fails after side effects?"}
   FAIL -->|yes| COMP[compensation]
-  FAIL -->|no| STOP{Needs to stop?}
+  FAIL -->|no| STOP{"Needs to stop?"}
   STOP -->|yes| CANCEL[cancellation]
   style Q fill:#F5E0D2,stroke:#D97757
   style LONG fill:#F5E0D2,stroke:#D97757
@@ -3412,16 +3412,16 @@ class PrimitiveGateway:
   <span class="diagram-label">Cancellation flow</span>
   <div class="mermaid">
 flowchart TB
-  R["User / system<br/>requests cancellation"] --> S{State allows?}
+  R["User / system<br/>requests cancellation"] --> S{"State allows?"}
   S -->|no| KEEP[no-op]
-  S -->|yes| M{cancellation_mode}
+  S -->|yes| M{"cancellation_mode"}
   M -->|graceful| G1[current step finishes]
   G1 --> G2[future steps skip via prelude check]
-  G2 --> C1[command → cancelled]
-  M -->|compensate_then_stop| K1[command → compensating]
+  G2 --> C1["command → cancelled"]
+  M -->|compensate_then_stop| K1["command → compensating"]
   K1 --> K2[walk effects in reverse]
   K2 --> K3[enqueue each compensation]
-  K3 --> K4[command → compensated]
+  K3 --> K4["command → compensated"]
   K4 --> C1
   C1 --> AU[/"domain_events audit"/]
   style S fill:#F5E0D2,stroke:#D97757
@@ -4903,7 +4903,7 @@ flowchart LR
   <div class="mermaid">
 flowchart LR
   W[Workers produce artifacts] --> REV[Reviewer evaluates]
-  REV --> Q{Risk remains?}
+  REV --> Q{"Risk remains?"}
   Q -->|yes| HUM[Human approval]
   Q -->|no| PUB([Publication])
   HUM --> PUB
@@ -7378,7 +7378,7 @@ flowchart TB
   E3 --> J
   J --> JOIN[join results]
   JOIN --> ART[recommendation artifact]
-  ART --> APP{external booking?}
+  ART --> APP{"external booking?"}
   APP -->|yes| HA[approval]
   APP -->|no| DONE[done]
   HA --> DONE
