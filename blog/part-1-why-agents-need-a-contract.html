@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why agents need a contract · Concord blog · Part 1</title>
+<meta name="description" content="Durable execution tells you what ran. It doesn't tell you what it meant. Part 1 of a three-part series on Concord, the semantic contract layer for governed work.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F0EEE6;
+    --paper-2: #E8E6DD;
+    --panel: #F5F3EB;
+    --panel-2: #EFEDE3;
+    --ink: #141413;
+    --ink-soft: #2D2A26;
+    --muted: #5D5A52;
+    --muted-2: #87837A;
+    --line: #D4D0C4;
+    --line-soft: #E2DFD4;
+    --coral: #D97757;
+    --coral-deep: #B95A3D;
+    --coral-bg: #F3E3D9;
+    --sage: #6E7A55;
+    --sage-bg: #E8EAD8;
+    --plum: #7E5A6B;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; padding: 48px 32px 96px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    max-width: 760px; margin-left: auto; margin-right: auto;
+  }
+
+  /* Site nav */
+  .site-nav {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    font-size: 12.5px; color: var(--muted); margin-bottom: 28px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .site-nav a { color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
+  .site-nav a:hover { color: var(--coral-deep); }
+  .site-nav a.current { color: var(--ink); font-weight: 600; }
+  .site-nav .sep { color: var(--muted-2); }
+
+  /* Hero */
+  header.hero { margin: 36px 0 56px; }
+  .eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--coral);
+    margin-bottom: 18px;
+  }
+  header.hero h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 400; font-size: 48px; line-height: 1.08; letter-spacing: -0.025em;
+    color: var(--ink); margin: 0 0 22px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-weight: 300;
+    font-size: 21px; line-height: 1.45; color: var(--ink-soft);
+    margin: 0 0 24px;
+  }
+  .meta-strip {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .meta-strip span { display: inline-flex; align-items: center; gap: 6px; }
+  .meta-strip strong { color: var(--ink-soft); font-weight: 600; }
+
+  /* Sections */
+  section { margin: 56px 0; }
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 30px; font-weight: 400;
+    line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 16px; color: var(--ink);
+  }
+  h3 {
+    font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600;
+    letter-spacing: -0.005em; margin: 26px 0 10px; color: var(--ink);
+  }
+  p { margin: 14px 0; color: var(--ink-soft); }
+  p strong { color: var(--ink); font-weight: 600; }
+  em { font-style: italic; color: var(--ink); }
+  a { color: var(--coral-deep); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--coral); }
+  ul, ol { margin: 14px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 6px 0; }
+  ul li::marker { color: var(--coral); }
+  code {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.88em;
+    background: var(--panel); padding: 1px 6px; border-radius: 3px;
+    color: var(--ink); border: 1px solid var(--line-soft);
+  }
+  pre {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.55;
+    background: #F8F5EC; padding: 16px 18px; border-radius: 6px;
+    border: 1px solid var(--line); overflow-x: auto; color: var(--ink);
+    margin: 18px 0;
+  }
+  pre code { background: none; padding: 0; border: none; }
+  blockquote {
+    margin: 22px 0; padding: 4px 0 4px 22px;
+    border-left: 2px solid var(--line);
+    font-family: 'Source Serif 4', Georgia, serif; font-style: italic;
+    color: var(--muted); font-size: 17px; line-height: 1.55;
+  }
+
+  /* Callouts */
+  .callout {
+    margin: 22px 0; padding: 16px 20px; border-left: 2px solid var(--coral);
+    background: var(--coral-bg); border-radius: 0 4px 4px 0;
+  }
+  .callout.tip { border-left-color: var(--sage); background: var(--sage-bg); }
+  .callout.warn { border-left-color: #B68A2E; background: #F4ECD7; }
+  .callout-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px;
+    color: var(--coral-deep);
+  }
+  .callout.tip .callout-label { color: var(--sage); }
+  .callout.warn .callout-label { color: #936A1D; }
+  .callout p { margin: 0; color: var(--ink); font-size: 14.5px; }
+  .callout p + p { margin-top: 8px; }
+
+  /* Pull quotes */
+  .pull {
+    font-family: 'Source Serif 4', Georgia, serif; font-weight: 300;
+    font-size: 26px; line-height: 1.32; letter-spacing: -0.01em;
+    color: var(--ink); margin: 36px 0; padding: 0 24px;
+    border-left: 3px solid var(--coral);
+  }
+
+  /* Simulation wrapper */
+  .sim {
+    margin: 36px -20px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .sim-header {
+    padding: 12px 22px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .sim-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--sage);
+  }
+  .sim-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 17px;
+    color: var(--ink); font-weight: 400;
+  }
+  .sim-body { padding: 24px 22px; }
+
+  /* ---------- Sim 1: Scattered evidence ---------- */
+  .ev-stage {
+    display: grid; grid-template-rows: auto auto; gap: 18px;
+    margin-bottom: 20px;
+  }
+  .ev-agent-row { display: flex; justify-content: center; }
+  .ev-agent {
+    width: 220px; padding: 14px 18px;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    text-align: center; position: relative;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .ev-agent.active {
+    border-color: var(--coral);
+    box-shadow: 0 0 0 3px var(--coral-bg);
+  }
+  .ev-agent .ev-role {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+  }
+  .ev-agent .ev-name {
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600;
+    color: var(--ink); margin-top: 4px;
+  }
+  .ev-systems {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  }
+  .ev-system {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 14px; min-height: 78px;
+    position: relative; transition: all 0.25s ease;
+    cursor: default;
+  }
+  .ev-system.fired { border-color: var(--coral); }
+  .ev-system.clickable { cursor: pointer; }
+  .ev-system.clickable:hover { background: var(--panel); }
+  .ev-system.selected { border-color: var(--coral-deep); background: var(--coral-bg); }
+  .ev-sys-role {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+  }
+  .ev-sys-name {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600;
+    color: var(--ink); margin-top: 4px;
+  }
+  .ev-sys-count {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--muted); margin-top: 6px;
+    opacity: 0; transition: opacity 0.3s ease;
+  }
+  .ev-system.fired .ev-sys-count { opacity: 1; }
+  .ev-system .ev-sys-dot {
+    position: absolute; top: 10px; right: 10px;
+    width: 6px; height: 6px; border-radius: 50%; background: var(--line);
+    transition: background 0.25s ease, transform 0.25s ease;
+  }
+  .ev-system.fired .ev-sys-dot { background: var(--coral); }
+
+  .ev-controls {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 18px;
+  }
+  .ev-btn {
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 8px 14px; background: var(--paper); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 4px;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .ev-btn:hover:not(:disabled) { background: var(--panel); border-color: var(--ink-soft); }
+  .ev-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .ev-btn-primary { background: var(--coral); color: white; border-color: var(--coral); }
+  .ev-btn-primary:hover:not(:disabled) { background: var(--coral-deep); border-color: var(--coral-deep); }
+
+  .ev-toggle {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted);
+    user-select: none;
+  }
+  .ev-toggle-switch {
+    width: 36px; height: 20px; background: var(--line); border-radius: 10px;
+    position: relative; cursor: pointer; transition: background 0.2s ease;
+  }
+  .ev-toggle-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px;
+    width: 16px; height: 16px; background: white; border-radius: 50%;
+    transition: transform 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  }
+  .ev-toggle.on .ev-toggle-switch { background: var(--coral); }
+  .ev-toggle.on .ev-toggle-switch::after { transform: translateX(16px); }
+  .ev-toggle.disabled { opacity: 0.45; pointer-events: none; }
+  .ev-toggle-label-on { color: var(--coral-deep); font-weight: 600; }
+
+  .ev-questions {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 6px; padding: 14px 18px; margin-bottom: 18px;
+  }
+  .ev-q-title {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .ev-q-list { list-style: none; margin: 0; padding: 0; }
+  .ev-q-list li {
+    display: flex; justify-content: space-between; gap: 12px;
+    padding: 5px 0; font-size: 13px;
+    border-bottom: 1px dotted var(--line-soft);
+  }
+  .ev-q-list li:last-child { border-bottom: none; }
+  .ev-q { color: var(--ink-soft); }
+  .ev-a {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted-2); white-space: nowrap;
+  }
+  .ev-a.resolved { color: var(--sage); font-weight: 600; }
+  .ev-a.resolved::before { content: '✓ '; color: var(--sage); }
+
+  .ev-logs { margin-top: 0; }
+  .ev-log-hint {
+    font-size: 12.5px; color: var(--muted); font-style: italic;
+    text-align: center; padding: 14px 0;
+  }
+  .ev-log-panel {
+    background: #1A1A18; color: #E8E5DE; border-radius: 4px;
+    padding: 14px 16px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; line-height: 1.6; overflow-x: auto;
+    max-height: 280px; overflow-y: auto;
+  }
+  .ev-log-panel .lk { color: #A8C5E8; }      /* keys */
+  .ev-log-panel .lv { color: #E8C788; }      /* values */
+  .ev-log-panel .ldim { color: #8A8780; }     /* timestamps, dim */
+  .ev-log-panel .lcoral { color: #E8A87C; }   /* highlights */
+  .ev-log-panel .lsage { color: #A8C088; }    /* successful */
+  .ev-log-panel .lwarn { color: #E89C7C; }    /* warnings */
+
+  .ev-tabs {
+    display: flex; gap: 4px; margin-bottom: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .ev-tab {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    padding: 8px 12px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .ev-tab:hover { color: var(--ink); }
+  .ev-tab.active { color: var(--coral-deep); border-bottom-color: var(--coral); font-weight: 600; }
+  .ev-tab-body { margin-top: 12px; }
+
+  /* Footer */
+  .post-footer {
+    margin-top: 80px; padding-top: 30px; border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  }
+  .post-nav-card {
+    padding: 18px 22px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; text-decoration: none; color: var(--ink);
+    transition: border-color 0.15s ease;
+  }
+  .post-nav-card:hover { border-color: var(--coral); }
+  .post-nav-card.next { text-align: right; }
+  .post-nav-card .nav-label {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .post-nav-card .nav-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 18px;
+    font-weight: 400; line-height: 1.25; color: var(--ink);
+  }
+  .post-nav-card.next .nav-title { color: var(--coral-deep); }
+
+  /* Mobile */
+  @media (max-width: 720px) {
+    body { padding: 32px 18px 64px; font-size: 15px; }
+    header.hero h1 { font-size: 34px; }
+    .lede { font-size: 18.5px; }
+    h2 { font-size: 24px; }
+    .pull { font-size: 21px; padding: 0 14px; }
+    .sim { margin: 28px -8px; }
+    .sim-body { padding: 18px 14px; }
+    .ev-systems { grid-template-columns: repeat(2, 1fr); }
+    .post-footer { grid-template-columns: 1fr; }
+    .post-nav-card.next { text-align: left; }
+    .ev-controls { flex-direction: column; align-items: stretch; }
+    .ev-toggle { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="../index.html">Architecture</a><span class="sep">·</span>
+  <a href="../problems.html">Problems</a><span class="sep">·</span>
+  <a href="../what-concord-is.html">Positioning</a><span class="sep">·</span>
+  <a href="index.html" class="current">Blog</a><span class="sep">·</span>
+  <a href="../examples/hotel-booking.html">Examples</a>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Concord blog · Part 1 of 3</div>
+  <h1>Why agents need a contract</h1>
+  <p class="lede">Durable execution tells you what ran. It doesn't tell you what it <em>meant</em>. That gap is the problem Concord exists to close — and it's getting wider as agents start to initiate real work.</p>
+  <div class="meta-strip">
+    <span><strong>Read</strong> ~7 min</span>
+    <span><strong>Series</strong> 1 / 3</span>
+    <span><strong>Next</strong> Contract, not runtime →</span>
+  </div>
+</header>
+
+<div class="callout tip">
+  <div class="callout-label">If you're already convinced</div>
+  <p>Skim ahead. <a href="part-2-contract-not-runtime.html">Part 2</a> draws the layer boundaries (Concord vs DBOS vs LangGraph vs OPA). <a href="part-3-day-in-the-life.html">Part 3</a> walks a hotel booking through the contract end-to-end. Otherwise, start here.</p>
+</div>
+
+<section>
+  <h2>A 3 a.m. story</h2>
+  <p>It's 3:14 a.m. The on-call engineer is paged. A customer says they were charged twice for the same hotel reservation, and they can only see one of the two charges in their dashboard. The engineer opens their laptop.</p>
+  <p>They have a lot of evidence. Slack has the agent's reasoning trace. Postgres has two reservation rows. Stripe has two payment intents. The agent's memory store has a <code>preferred_hotel</code> write that doesn't seem related but might be. The OTel dashboard says the workflow completed successfully.</p>
+  <p>What they don't have is the answer to a basic question: <strong>which of those two reservations was authorized?</strong></p>
+  <p>Each piece of evidence has its own answer source. Slack tells you what the agent <em>thought</em> it was doing. Postgres tells you what landed in the database. Stripe tells you what cleared the processor. None of them tell you all of:</p>
+  <ul>
+    <li>Did the user approve both bookings, or just one?</li>
+    <li>Did the first attempt fail silently and a retry create the second?</li>
+    <li>Did a duplicate webhook fire from the hotel API?</li>
+    <li>Is the second charge idempotent with the first, or is it a real duplicate?</li>
+    <li>Can the second one be compensated without undoing the first?</li>
+  </ul>
+  <p>The data formats don't agree — different IDs, different timestamps, different shapes — so the engineer has to reconstruct the cross-cutting story by hand. By 4 a.m. they have a hypothesis. By 5 a.m. they've issued a refund out of caution. The actual root cause comes out three days later in a postmortem.</p>
+  <p>This isn't an unusual situation. It's what happens by default. Modern systems make execution reliable but leave the <em>meaning</em> of that execution to be reconstructed from logs.</p>
+</section>
+
+<section>
+  <h2>Scattered evidence — see for yourself</h2>
+  <p>The simulation below has an agent that fires four side effects: a Slack message, a Postgres write, a Stripe charge, and a memory write. Run it, investigate the failure, and toggle Concord on. What changes isn't <em>what happened</em> — it's whether the meaning survived.</p>
+
+  <div class="sim">
+    <div class="sim-header">
+      <span class="sim-label">Interactive</span>
+      <span class="sim-title">Scattered evidence vs unified contract</span>
+    </div>
+    <div class="sim-body">
+      <div class="ev-stage">
+        <div class="ev-agent-row">
+          <div class="ev-agent" id="ev-agent">
+            <div class="ev-role">Agent</div>
+            <div class="ev-name">hotel_bot</div>
+          </div>
+        </div>
+        <div class="ev-systems" id="ev-systems">
+          <div class="ev-system" data-sys="slack">
+            <div class="ev-sys-dot"></div>
+            <div class="ev-sys-role">External</div>
+            <div class="ev-sys-name">Slack</div>
+            <div class="ev-sys-count" data-count="slack">—</div>
+          </div>
+          <div class="ev-system" data-sys="postgres">
+            <div class="ev-sys-dot"></div>
+            <div class="ev-sys-role">Database</div>
+            <div class="ev-sys-name">Postgres</div>
+            <div class="ev-sys-count" data-count="postgres">—</div>
+          </div>
+          <div class="ev-system" data-sys="stripe">
+            <div class="ev-sys-dot"></div>
+            <div class="ev-sys-role">Payments</div>
+            <div class="ev-sys-name">Stripe</div>
+            <div class="ev-sys-count" data-count="stripe">—</div>
+          </div>
+          <div class="ev-system" data-sys="memory">
+            <div class="ev-sys-dot"></div>
+            <div class="ev-sys-role">Memory</div>
+            <div class="ev-sys-name">vector_store</div>
+            <div class="ev-sys-count" data-count="memory">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ev-controls">
+        <button class="ev-btn ev-btn-primary" id="ev-btn-run">▶ Propose hotel booking</button>
+        <button class="ev-btn" id="ev-btn-investigate" disabled>Investigate failure</button>
+        <button class="ev-btn" id="ev-btn-reset" style="margin-left: 4px;">Reset</button>
+        <label class="ev-toggle disabled" id="ev-toggle">
+          <span>Concord</span>
+          <span class="ev-toggle-switch"></span>
+          <span class="ev-toggle-state">off</span>
+        </label>
+      </div>
+
+      <div class="ev-questions">
+        <div class="ev-q-title">Questions at 3 a.m.</div>
+        <ul class="ev-q-list" id="ev-q-list">
+          <li><span class="ev-q">Who authorized this booking?</span><span class="ev-a">—</span></li>
+          <li><span class="ev-q">Which policy allowed it?</span><span class="ev-a">—</span></li>
+          <li><span class="ev-q">Is the retry idempotent with the original?</span><span class="ev-a">—</span></li>
+          <li><span class="ev-q">Can the duplicate be compensated?</span><span class="ev-a">—</span></li>
+          <li><span class="ev-q">Which artifact maps to which charge?</span><span class="ev-a">—</span></li>
+        </ul>
+      </div>
+
+      <div class="ev-logs" id="ev-logs">
+        <div class="ev-log-hint">Click <strong>Propose hotel booking</strong> to start.</div>
+      </div>
+    </div>
+  </div>
+
+  <p>Switch Concord on and the four side effects still happen. The agent still sends Slack, Postgres still writes, Stripe still charges. The difference is that each one is <em>also</em> a row in <code>domain_events</code>, with a <code>command_id</code> tying them together and a <code>purpose</code> column saying what the row is for. The duplicate booking that caused the page never happened — policy caught it before the second effect fired.</p>
+</section>
+
+<section>
+  <h2>Why now</h2>
+  <p>This problem has been around as long as distributed systems. So why am I writing about it in 2026?</p>
+  <p>Because the trigger condition used to be a human. A human clicked a button. The system executed. The human's intent was implicit context — easy to recover by asking them. The system didn't have to record intent explicitly because <em>of course</em> Alex booked the hotel — Alex pressed the book button.</p>
+  <p class="pull">The system has to record intent explicitly now because the intent didn't come from a person. It came from an agent.</p>
+  <p>And the agent's reasoning is a transient prompt-and-completion exchange. There is no log to point to that says "this is what the agent intended." If you don't capture it at the moment it's proposed, it's gone. The model that produced the proposal might not even exist next quarter.</p>
+  <p>The mismatch is structural. Old runtimes assumed human ingress. New runtimes have to assume agent ingress. The contract that used to live in the human's head now has to live in a table.</p>
+</section>
+
+<section>
+  <h2>The five questions</h2>
+  <p>The mental model I keep coming back to is five questions. Every consequential action has to answer all five:</p>
+<pre><code>1. What is this action?
+2. Who or what is allowed to do it?
+3. What does it affect?
+4. How should it execute?
+5. What must be recorded?</code></pre>
+  <p>Each question has a home in a mature stack:</p>
+  <ul>
+    <li><strong>What is this action</strong> — Concord. The command type, payload schema, declared effects.</li>
+    <li><strong>Who is allowed</strong> — a policy engine (OPA, Cedar, or Concord's own policy bundles).</li>
+    <li><strong>What it affects</strong> — Concord's effect, artifact, and memory primitives.</li>
+    <li><strong>How it executes</strong> — a durable runtime. DBOS today; Temporal as an alternate adapter.</li>
+    <li><strong>What gets recorded</strong> — Concord's <code>domain_events</code> (with OTel mirroring traces).</li>
+  </ul>
+  <p>The novelty isn't any single answer. Workflows exist. Policies exist. Audit logs exist. The novelty is making all five share the <em>same action contract</em>, so that a deterministic vendor sync and an agentic hotel booking show up with the same shape — and a 3 a.m. investigator can answer all five from one place.</p>
+</section>
+
+<section>
+  <h2>Three counterarguments I take seriously</h2>
+  <p>I've made this case enough times to know which counterarguments come up. Here are the three I think most about.</p>
+
+  <h3>"Can't OTel do this?"</h3>
+  <p>OTel records what executed. It does not record authority or consequence. A trace says "this span ran for 312 ms and produced this output." It does not say "this action was authorized by Alex under policy bundle <code>hotel_booking_v3</code> with an approval recorded at 03:14:03." Traces are a strict subset of audit, and the subset they cover is the part that was already easy.</p>
+  <p>This isn't an argument <em>against</em> OTel — I want Concord to emit OTel traces, and the two are complementary. It's an argument against using OTel as the system of record for governance decisions. Spans are forgetful by design.</p>
+
+  <h3>"Can't the agent framework do this?"</h3>
+  <p>Agent frameworks govern the agent's reasoning loop. They know which tool the agent chose and what arguments it produced. They generally don't know what happened <em>after</em> the tool call reached the connector — and they don't unify deterministic code paths and agentic code paths under one contract.</p>
+  <p>Concord is willing to govern a non-agentic command (a scheduled vendor sync) and an agentic one (a hotel booking) with the same primitive. Same status machine, same audit table, same compensation graph. That's the thing the agent framework was not designed to do.</p>
+
+  <h3>"Isn't this CQRS / event sourcing?"</h3>
+  <p>Close. I borrow from that lineage. Two differences worth naming:</p>
+  <ul>
+    <li><strong>The agent-proposal mode.</strong> CQRS commands typically come from human ingress and represent immediate intent. Concord commands often originate from an agent's proposal and pass through policy and approval before they become real. The "command" in CQRS is closer to Concord's <code>command + approved + planned</code> state, all collapsed into one moment. Concord pulls those moments apart.</li>
+    <li><strong>The cross-cutting nature.</strong> CQRS is typically per-aggregate. Concord's command shape applies across deterministic functions, agentic loops, connector calls, and approvals. The shape <em>is</em> the contract.</li>
+  </ul>
+  <p>If you're already running event sourcing and your aggregates already authorize their own commands, you're more than halfway to Concord. The extra mile is the cross-cutting registry and the agent gateway.</p>
+</section>
+
+<section>
+  <h2>Where I might be wrong</h2>
+  <p>I'll close with three places I'm aware Concord could be the wrong choice, and one place I haven't decided.</p>
+
+  <h3>This is overkill for many apps</h3>
+  <p>True. If you don't have agents and you don't have multi-system side effects, you don't need this. Concord's break-even is around the point where you have a connector call, an approval, and an agent-or-scheduled trigger in the same workflow. Below that line, vanilla DBOS or a simple Postgres + cron is plenty.</p>
+
+  <h3>The contract might calcify</h3>
+  <p>Schemas drift. Tool catalogs change. Policies get rewritten. Concord versions all of these in principle, but I haven't shipped a migration story I'm proud of. If I get this wrong, the contract becomes the thing teams route around instead of through — and the whole point falls apart.</p>
+
+  <h3>The ceremony tax</h3>
+  <p>Audit tiers (Part 2 covers them) let trivial actions stay trivial. But the impulse to mark everything Tier 3 — "just to be safe" — is real and will show up in code review. Concord doesn't enforce restraint. The team has to.</p>
+
+  <h3>What I haven't decided</h3>
+  <p>Whether Concord should ship with an opinionated policy DSL or stay strictly bring-your-own-policy. There's a strong case for both — opinionated keeps small teams unstuck, BYO keeps regulated industries adoptable. I lean BYO today, but I expect to be wrong about this at least once.</p>
+</section>
+
+<div class="callout">
+  <div class="callout-label">Coming up in Part 2</div>
+  <p>Contract, not runtime. The boundary between Concord, DBOS, LangGraph, OPA, OTel, and Postgres. Three small interactive demos: a layer stack, an audit-tier picker, and a clickable capability graph.</p>
+</div>
+
+<div class="post-footer">
+  <a class="post-nav-card" href="index.html">
+    <div class="nav-label">← Series</div>
+    <div class="nav-title">Why Concord exists</div>
+  </a>
+  <a class="post-nav-card next" href="part-2-contract-not-runtime.html">
+    <div class="nav-label">Part 2 →</div>
+    <div class="nav-title">Contract, not runtime</div>
+  </a>
+</div>
+
+<script>
+(function() {
+  // ---------- Sim 1 state machine ----------
+  const counts = { slack: '1 message', postgres: '2 rows', stripe: '2 events', memory: '2 writes' };
+  const systems = ['slack', 'postgres', 'stripe', 'memory'];
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+  let phase = 'idle';        // idle | running | ran | investigating
+  let concordOn = false;
+  let selectedSystem = null;
+
+  // ----- Data for the "without Concord" view: 4 different log shapes -----
+  const scatteredLogs = {
+    slack: `<span class="ldim">2026-06-08T03:14:01Z</span>
+{
+  <span class="lk">"channel"</span>: <span class="lv">"#alex-dms"</span>,
+  <span class="lk">"user"</span>: <span class="lv">"U03K2X1"</span>,
+  <span class="lk">"type"</span>: <span class="lv">"message"</span>,
+  <span class="lk">"ts"</span>: <span class="lv">"1717890841.000200"</span>,
+  <span class="lk">"text"</span>: <span class="lv">"Booked Hotel Ipsum, 3 nights, $612."</span>
+}
+
+<span class="ldim">// No record of authorization or policy decision.
+// No correlation id back to Postgres or Stripe.</span>`,
+    postgres: `<span class="ldim">-- query: SELECT * FROM reservations WHERE user_id='alex' ORDER BY created_at DESC LIMIT 5;</span>
+
+id          user_id  hotel_id      checkin       status      created_at
+<span class="lcoral">res_8a2c1</span>   alex     hotel_ipsum   2026-07-14    confirmed   <span class="ldim">2026-06-08 03:14:08+00</span>
+<span class="lwarn">res_9d4f7</span>   alex     hotel_ipsum   2026-07-14    confirmed   <span class="ldim">2026-06-08 03:14:12+00</span>  <span class="lwarn">-- duplicate?</span>
+
+<span class="ldim">// Both rows look identical. No reason recorded for the second insert.
+// No FK linking them. No way to know which one is the "real" one.</span>`,
+    stripe: `evt_1Q3K2X9p  <span class="lsage">payment_intent.succeeded</span>  pi_3MqLk2  <span class="lcoral">$612.00</span>  succeeded
+evt_1Q3K8Y4r  <span class="lsage">payment_intent.succeeded</span>  pi_3MqRn4  <span class="lcoral">$612.00</span>  succeeded
+
+<span class="ldim">// Both charges show idempotency_key: (empty).
+// Stripe has no way to know these were duplicates of the same intent.
+// Manual refund is the only recourse.</span>`,
+    memory: `<span class="ldim">> hgetall mem:alex</span>
+
+preferred_hotel  "Hotel Ipsum"
+last_booking     "<span class="lwarn">res_9d4f7</span>"      <span class="ldim"># the duplicate, not the original</span>
+
+<span class="ldim">// The memory write fired on the latest event.
+// If you compensate res_9d4f7, "last_booking" still points to it.</span>`
+  };
+
+  const concordLog = `<span class="ldim">[03:14:01]</span> <span class="lsage">command.created</span>      command_id=<span class="lcoral">cmd_7f3</span>  type=book_hotel       actor=agent:hotel_bot
+<span class="ldim">[03:14:01]</span> <span class="lsage">policy.evaluated</span>     command_id=<span class="lcoral">cmd_7f3</span>  decision=require_approval  reason=cost_threshold_500
+<span class="ldim">[03:14:01]</span> <span class="lsage">approval.requested</span>   command_id=<span class="lcoral">cmd_7f3</span>  approval_id=apr_2b9
+<span class="ldim">[03:14:03]</span> <span class="lsage">approval.granted</span>     command_id=<span class="lcoral">cmd_7f3</span>  actor=user:alex      approval_id=apr_2b9
+<span class="ldim">[03:14:08]</span> <span class="lsage">effect.executed</span>      command_id=<span class="lcoral">cmd_7f3</span>  op=hotel_booking.book   idempotency_key=cmd_7f3:book   result=res_8a2c1
+<span class="ldim">[03:14:11]</span> <span class="lsage">effect.executed</span>      command_id=<span class="lcoral">cmd_7f3</span>  op=stripe.charge        idempotency_key=cmd_7f3:charge result=pi_3MqLk2
+<span class="ldim">[03:14:11]</span> <span class="lsage">artifact.created</span>     command_id=<span class="lcoral">cmd_7f3</span>  artifact_type=reservation_confirmation  id=art_4e1
+<span class="ldim">[03:14:11]</span> <span class="lsage">command.succeeded</span>    command_id=<span class="lcoral">cmd_7f3</span>
+
+<span class="ldim">[03:14:12]</span> <span class="lwarn">command.created</span>      command_id=<span class="lcoral">cmd_8a1</span>  type=book_hotel       actor=connector:webhook  note=duplicate_callback
+<span class="ldim">[03:14:12]</span> <span class="lwarn">policy.evaluated</span>     command_id=<span class="lcoral">cmd_8a1</span>  decision=deny         reason=idempotency_conflict  conflict_with=<span class="lcoral">cmd_7f3</span>
+<span class="ldim">[03:14:12]</span> <span class="lwarn">command.rejected</span>     command_id=<span class="lcoral">cmd_8a1</span>
+
+<span class="ldim">// One trail. One command_id per intent. One actor per row.
+// The duplicate never reached the connector.</span>`;
+
+  const resolvedAnswers = [
+    'user:alex (apr_2b9, 03:14:03)',
+    'hotel_booking_v3 — cost &gt; $500 rule',
+    'yes — key cmd_7f3:charge dedupes',
+    'no duplicate executed; webhook rejected',
+    'art_4e1 → res_8a2c1 → pi_3MqLk2'
+  ];
+
+  // ----- Render helpers -----
+  function setSystemFired(sys, fired) {
+    const node = document.querySelector(`.ev-system[data-sys="${sys}"]`);
+    if (!node) return;
+    if (fired) node.classList.add('fired');
+    else node.classList.remove('fired');
+    const cnt = node.querySelector('.ev-sys-count');
+    if (cnt) cnt.textContent = fired ? counts[sys] : '—';
+  }
+
+  function clearAll() {
+    systems.forEach(s => setSystemFired(s, false));
+    $('#ev-agent').classList.remove('active');
+    selectedSystem = null;
+    $$('.ev-system').forEach(n => { n.classList.remove('selected'); n.classList.remove('clickable'); });
+    renderLogs('idle');
+    resetQuestions();
+  }
+
+  function resetQuestions() {
+    const items = $$('#ev-q-list .ev-a');
+    items.forEach(el => { el.textContent = '—'; el.classList.remove('resolved'); });
+  }
+
+  function resolveQuestions() {
+    const items = $$('#ev-q-list .ev-a');
+    items.forEach((el, i) => {
+      el.innerHTML = resolvedAnswers[i];
+      el.classList.add('resolved');
+    });
+  }
+
+  function unresolveQuestions() {
+    const items = $$('#ev-q-list .ev-a');
+    items.forEach(el => {
+      el.textContent = 'unknown — evidence scattered';
+      el.classList.remove('resolved');
+    });
+  }
+
+  function renderLogs(mode) {
+    const wrap = $('#ev-logs');
+    if (mode === 'idle') {
+      wrap.innerHTML = `<div class="ev-log-hint">Click <strong>Propose hotel booking</strong> to start.</div>`;
+      return;
+    }
+    if (mode === 'ran') {
+      wrap.innerHTML = `<div class="ev-log-hint">Side effects fired across four systems. Click <strong>Investigate failure</strong> to dig in.</div>`;
+      return;
+    }
+    if (mode === 'investigate-off') {
+      const tabs = systems.map(s =>
+        `<button class="ev-tab${s===selectedSystem?' active':''}" data-tab="${s}">${s}</button>`
+      ).join('');
+      const sel = selectedSystem || 'slack';
+      wrap.innerHTML = `
+        <div class="ev-tabs">${tabs}</div>
+        <div class="ev-tab-body"><div class="ev-log-panel">${scatteredLogs[sel]}</div></div>
+        <div class="ev-log-hint" style="margin-top: 8px; text-align: left;">Four formats, four IDs, four timestamps that don't quite align. Reconstruct the meaning yourself.</div>
+      `;
+      $$('#ev-logs .ev-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          selectedSystem = btn.dataset.tab;
+          renderLogs('investigate-off');
+        });
+      });
+      return;
+    }
+    if (mode === 'investigate-on') {
+      wrap.innerHTML = `
+        <div class="ev-log-panel">${concordLog}</div>
+        <div class="ev-log-hint" style="margin-top: 8px; text-align: left;">One trail. The four side effects still happened. They're all tagged with the same <code>command_id</code> and the duplicate never reached the connector.</div>
+      `;
+      return;
+    }
+  }
+
+  // ----- Controls -----
+  const btnRun = $('#ev-btn-run');
+  const btnInvestigate = $('#ev-btn-investigate');
+  const btnReset = $('#ev-btn-reset');
+  const toggle = $('#ev-toggle');
+
+  btnRun.addEventListener('click', async () => {
+    if (phase !== 'idle') return;
+    phase = 'running';
+    btnRun.disabled = true;
+    $('#ev-agent').classList.add('active');
+    await new Promise(r => setTimeout(r, 350));
+    for (let i = 0; i < systems.length; i++) {
+      setSystemFired(systems[i], true);
+      await new Promise(r => setTimeout(r, 280));
+    }
+    phase = 'ran';
+    btnInvestigate.disabled = false;
+    renderLogs('ran');
+  });
+
+  btnInvestigate.addEventListener('click', () => {
+    if (phase !== 'ran' && phase !== 'investigating') return;
+    phase = 'investigating';
+    btnInvestigate.disabled = true;
+    toggle.classList.remove('disabled');
+    selectedSystem = 'slack';
+    $$('.ev-system').forEach(n => n.classList.add('clickable'));
+    $$('.ev-system').forEach(n => {
+      n.addEventListener('click', () => {
+        if (phase !== 'investigating' || concordOn) return;
+        selectedSystem = n.dataset.sys;
+        $$('.ev-system').forEach(x => x.classList.remove('selected'));
+        n.classList.add('selected');
+        renderLogs('investigate-off');
+      });
+    });
+    document.querySelector('.ev-system[data-sys="slack"]').classList.add('selected');
+    if (concordOn) {
+      renderLogs('investigate-on');
+      resolveQuestions();
+    } else {
+      renderLogs('investigate-off');
+      unresolveQuestions();
+    }
+  });
+
+  toggle.addEventListener('click', () => {
+    if (toggle.classList.contains('disabled')) return;
+    concordOn = !concordOn;
+    toggle.classList.toggle('on', concordOn);
+    toggle.querySelector('.ev-toggle-state').textContent = concordOn ? 'on' : 'off';
+    if (concordOn) {
+      toggle.querySelector('.ev-toggle-state').classList.add('ev-toggle-label-on');
+    } else {
+      toggle.querySelector('.ev-toggle-state').classList.remove('ev-toggle-label-on');
+    }
+    if (phase === 'investigating') {
+      if (concordOn) {
+        $$('.ev-system').forEach(n => n.classList.remove('selected'));
+        renderLogs('investigate-on');
+        resolveQuestions();
+      } else {
+        document.querySelector(`.ev-system[data-sys="${selectedSystem||'slack'}"]`).classList.add('selected');
+        renderLogs('investigate-off');
+        unresolveQuestions();
+      }
+    }
+  });
+
+  btnReset.addEventListener('click', () => {
+    phase = 'idle';
+    concordOn = false;
+    toggle.classList.remove('on');
+    toggle.classList.add('disabled');
+    toggle.querySelector('.ev-toggle-state').textContent = 'off';
+    toggle.querySelector('.ev-toggle-state').classList.remove('ev-toggle-label-on');
+    btnRun.disabled = false;
+    btnInvestigate.disabled = true;
+    clearAll();
+  });
+})();
+</script>
+
+</body>
+</html>

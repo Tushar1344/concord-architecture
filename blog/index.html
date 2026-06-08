@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Concord blog — Why Concord exists, in three parts</title>
+<meta name="description" content="A three-part introduction to Concord, the semantic contract layer for governed work. Why agents need a contract. Contract, not runtime. A day in the life.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F0EEE6; --paper-2: #E8E6DD;
+    --panel: #F5F3EB; --panel-2: #EFEDE3;
+    --ink: #141413; --ink-soft: #2D2A26;
+    --muted: #5D5A52; --muted-2: #87837A;
+    --line: #D4D0C4; --line-soft: #E2DFD4;
+    --coral: #D97757; --coral-deep: #B95A3D; --coral-bg: #F3E3D9;
+    --sage: #6E7A55; --sage-bg: #E8EAD8;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; padding: 48px 32px 96px;
+    background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    max-width: 800px; margin-left: auto; margin-right: auto;
+  }
+  .site-nav {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    font-size: 12.5px; color: var(--muted); margin-bottom: 28px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .site-nav a { color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
+  .site-nav a:hover { color: var(--coral-deep); }
+  .site-nav a.current { color: var(--ink); font-weight: 600; }
+  .site-nav .sep { color: var(--muted-2); }
+
+  header.hero { margin: 36px 0 56px; }
+  .eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--coral);
+    margin-bottom: 18px;
+  }
+  header.hero h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 400; font-size: 56px; line-height: 1.04; letter-spacing: -0.028em;
+    color: var(--ink); margin: 0 0 22px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-weight: 300;
+    font-size: 22px; line-height: 1.42; color: var(--ink-soft);
+    margin: 0 0 24px; max-width: 660px;
+  }
+  .meta-strip {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .meta-strip strong { color: var(--ink-soft); font-weight: 600; }
+  .meta-strip a { color: var(--coral-deep); text-decoration: none; }
+  .meta-strip a:hover { color: var(--coral); text-decoration: underline; text-underline-offset: 3px; }
+
+  section { margin: 56px 0; }
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 28px; font-weight: 400;
+    line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 16px; color: var(--ink);
+  }
+  p { margin: 14px 0; color: var(--ink-soft); }
+  p strong { color: var(--ink); font-weight: 600; }
+  em { font-style: italic; color: var(--ink); }
+  a { color: var(--coral-deep); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--coral); }
+  ul { margin: 14px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 6px 0; }
+  ul li::marker { color: var(--coral); }
+  code {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.88em;
+    background: var(--panel); padding: 1px 6px; border-radius: 3px;
+    color: var(--ink); border: 1px solid var(--line-soft);
+  }
+
+  .post-list {
+    display: flex; flex-direction: column; gap: 18px; margin-top: 24px;
+  }
+  .post-card {
+    display: grid; grid-template-columns: 96px 1fr auto; gap: 22px;
+    padding: 26px 28px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; text-decoration: none; color: var(--ink);
+    transition: border-color 0.18s ease, transform 0.18s ease;
+    align-items: center;
+  }
+  .post-card:hover {
+    border-color: var(--coral); text-decoration: none;
+  }
+  .post-num {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 72px;
+    font-weight: 300; color: var(--coral); line-height: 1;
+    text-align: center;
+  }
+  .post-card-body { min-width: 0; }
+  .post-card-eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .post-card h3 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 26px;
+    font-weight: 400; line-height: 1.2; letter-spacing: -0.015em;
+    color: var(--ink); margin: 0 0 10px;
+  }
+  .post-card p {
+    margin: 0; font-size: 14.5px; color: var(--ink-soft); line-height: 1.55;
+  }
+  .post-card-meta {
+    margin-top: 12px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted); display: flex; gap: 14px;
+    flex-wrap: wrap;
+  }
+  .post-card-meta span strong { color: var(--ink-soft); font-weight: 600; }
+  .post-arrow {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 28px;
+    color: var(--coral); transition: transform 0.18s ease;
+  }
+  .post-card:hover .post-arrow { transform: translateX(4px); }
+
+  .summary-card {
+    padding: 24px 28px; background: var(--coral-bg); border: 1px solid var(--coral);
+    border-radius: 6px; margin: 36px 0;
+  }
+  .summary-card h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 22px;
+    font-weight: 400; color: var(--ink); margin: 0 0 12px;
+    border: none; padding: 0;
+  }
+  .summary-card p { color: var(--ink); margin: 8px 0; font-size: 14.5px; }
+
+  .where-from {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-top: 22px;
+  }
+  .wf-card {
+    padding: 14px 18px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; text-decoration: none; color: var(--ink);
+  }
+  .wf-card:hover { border-color: var(--coral); text-decoration: none; }
+  .wf-card .wf-label {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted);
+    margin-bottom: 4px;
+  }
+  .wf-card .wf-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 18px;
+    font-weight: 400; color: var(--ink); margin-bottom: 4px;
+  }
+  .wf-card .wf-desc { font-size: 13px; color: var(--muted); margin: 0; }
+
+  footer.page-foot {
+    margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted); display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px;
+  }
+  footer.page-foot a { color: var(--muted); text-decoration: none; }
+  footer.page-foot a:hover { color: var(--coral-deep); text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (max-width: 720px) {
+    body { padding: 32px 18px 64px; font-size: 15px; }
+    header.hero h1 { font-size: 36px; }
+    .lede { font-size: 18.5px; }
+    .post-card { grid-template-columns: 64px 1fr; padding: 18px 20px; gap: 16px; }
+    .post-num { font-size: 52px; }
+    .post-arrow { display: none; }
+    .post-card h3 { font-size: 21px; }
+    .where-from { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="../index.html">Architecture</a><span class="sep">·</span>
+  <a href="../problems.html">Problems</a><span class="sep">·</span>
+  <a href="../what-concord-is.html">Positioning</a><span class="sep">·</span>
+  <a class="current">Blog</a><span class="sep">·</span>
+  <a href="../examples/hotel-booking.html">Examples</a>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Concord blog · three-part series</div>
+  <h1>Why Concord exists, in three parts.</h1>
+  <p class="lede">An introduction to the semantic contract layer for governed work. Three posts. Five interactive simulations. Read in order, or jump to whichever part is closest to your question.</p>
+  <div class="meta-strip">
+    <span><strong>Reading time</strong> ~25 min total</span>
+    <span><strong>Updated</strong> 2026-06-08</span>
+    <span><strong>Source</strong> <a href="https://github.com/Tushar1344/concord-architecture">github.com/Tushar1344/concord-architecture</a></span>
+  </div>
+</header>
+
+<div class="post-list">
+  <a class="post-card" href="part-1-why-agents-need-a-contract.html">
+    <div class="post-num">01</div>
+    <div class="post-card-body">
+      <div class="post-card-eyebrow">Part 1 · The problem</div>
+      <h3>Why agents need a contract</h3>
+      <p>Durable execution tells you what ran. It doesn't tell you what it <em>meant</em>. A 3 a.m. story, an interactive demo of scattered-vs-unified evidence, and the five questions every consequential action has to answer.</p>
+      <div class="post-card-meta">
+        <span><strong>Read</strong> ~7 min</span>
+        <span><strong>Sims</strong> 1</span>
+        <span><strong>Themes</strong> failure story · agent ingress · CQRS comparison</span>
+      </div>
+    </div>
+    <div class="post-arrow">→</div>
+  </a>
+
+  <a class="post-card" href="part-2-contract-not-runtime.html">
+    <div class="post-num">02</div>
+    <div class="post-card-body">
+      <div class="post-card-eyebrow">Part 2 · The boundary</div>
+      <h3>Contract, not runtime</h3>
+      <p>Concord is not DBOS, not LangGraph, not OPA. An interactive layer stack, an audit-tier picker, and a clickable capability graph make the boundary concrete — and answer the question of what each layer actually owns.</p>
+      <div class="post-card-meta">
+        <span><strong>Read</strong> ~9 min</span>
+        <span><strong>Sims</strong> 3</span>
+        <span><strong>Themes</strong> layer stack · audit tiers · domain registry</span>
+      </div>
+    </div>
+    <div class="post-arrow">→</div>
+  </a>
+
+  <a class="post-card" href="part-3-day-in-the-life.html">
+    <div class="post-num">03</div>
+    <div class="post-card-body">
+      <div class="post-card-eyebrow">Part 3 · The walkthrough</div>
+      <h3>A day in the life</h3>
+      <p>A hotel booking traced through Concord end-to-end. Animated nine-step playback with three modes — full contract, minimal subset, no Concord at all — and a state panel that shows what each step actually writes.</p>
+      <div class="post-card-meta">
+        <span><strong>Read</strong> ~8 min</span>
+        <span><strong>Sims</strong> 1</span>
+        <span><strong>Themes</strong> step-through · bad/better/best · minimal Concord</span>
+      </div>
+    </div>
+    <div class="post-arrow">→</div>
+  </a>
+</div>
+
+<div class="summary-card">
+  <h2>The compressed version</h2>
+  <p>Agents are starting to initiate real work. Durable execution makes that work survive failure, but durability doesn't capture what an action <em>means</em>, who authorized it, what it touched, what got recorded, or how to undo it. Concord is the semantic contract layer that fills that gap — a Postgres-first, runtime-agnostic library that turns commands into governed decisions, plans, effects, and audit.</p>
+  <p>Or in one line: <strong>Concord is the contract above the runtime.</strong></p>
+</div>
+
+<section>
+  <h2>If you only have time for one part</h2>
+  <ul>
+    <li><strong>Engineer evaluating tools</strong> → Part 2 (the boundary diagram is the fastest way to know if Concord overlaps with what you already use).</li>
+    <li><strong>Architect or staff engineer</strong> → Part 1 (the failure story is the case for why the layer is needed at all).</li>
+    <li><strong>Tech lead or founder</strong> → Part 3 (the walkthrough shows what your team actually writes vs. what the framework generates).</li>
+    <li><strong>Curious skeptic</strong> → start at Part 1 and read the "Where I might be wrong" section at the end of each part. That's where the honest hedges live.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Where to go from here</h2>
+  <div class="where-from">
+    <a class="wf-card" href="../index.html">
+      <div class="wf-label">Reference</div>
+      <div class="wf-title">Architecture spec</div>
+      <p class="wf-desc">The full 121-section technical spec across four tabs — Core, Multi-agent, Runtime adapter (DBOS), Domain Registry.</p>
+    </a>
+    <a class="wf-card" href="../what-concord-is.html">
+      <div class="wf-label">Positioning</div>
+      <div class="wf-title">What Concord is &amp; isn't</div>
+      <p class="wf-desc">A longer-form positioning treatment with a nine-category comparison table.</p>
+    </a>
+    <a class="wf-card" href="../problems.html">
+      <div class="wf-label">Motivation</div>
+      <div class="wf-title">The ten problems</div>
+      <p class="wf-desc">Ten concrete pain points Concord exists to address, one per chapter.</p>
+    </a>
+    <a class="wf-card" href="../examples/hotel-booking.html">
+      <div class="wf-label">Worked example</div>
+      <div class="wf-title">Hotel booking design</div>
+      <p class="wf-desc">The full design doc for the hotel-booking workflow used in Part 3 — every command, policy, artifact, and connector contract.</p>
+    </a>
+  </div>
+</section>
+
+<footer class="page-foot">
+  <div>Concord · architecture &amp; positioning</div>
+  <div>
+    <a href="../index.html">Architecture</a> ·
+    <a href="../what-concord-is.html">Positioning</a> ·
+    <a href="../problems.html">Problems</a> ·
+    <a href="https://github.com/Tushar1344/concord-architecture">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>

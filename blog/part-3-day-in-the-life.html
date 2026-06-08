@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A day in the life · Concord blog · Part 3</title>
+<meta name="description" content="A hotel booking traced through Concord end-to-end. Animated step-through with three modes — full contract, minimal subset, no Concord at all.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F0EEE6; --paper-2: #E8E6DD;
+    --panel: #F5F3EB; --panel-2: #EFEDE3;
+    --ink: #141413; --ink-soft: #2D2A26;
+    --muted: #5D5A52; --muted-2: #87837A;
+    --line: #D4D0C4; --line-soft: #E2DFD4;
+    --coral: #D97757; --coral-deep: #B95A3D; --coral-bg: #F3E3D9;
+    --sage: #6E7A55; --sage-bg: #E8EAD8;
+    --plum: #7E5A6B;
+    --amber: #B68A2E; --amber-bg: #F4ECD7;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; padding: 48px 32px 96px;
+    background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    max-width: 760px; margin-left: auto; margin-right: auto;
+  }
+  .site-nav {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    font-size: 12.5px; color: var(--muted); margin-bottom: 28px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .site-nav a { color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
+  .site-nav a:hover { color: var(--coral-deep); }
+  .site-nav a.current { color: var(--ink); font-weight: 600; }
+  .site-nav .sep { color: var(--muted-2); }
+
+  header.hero { margin: 36px 0 56px; }
+  .eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--coral);
+    margin-bottom: 18px;
+  }
+  header.hero h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 400; font-size: 48px; line-height: 1.08; letter-spacing: -0.025em;
+    color: var(--ink); margin: 0 0 22px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-weight: 300;
+    font-size: 21px; line-height: 1.45; color: var(--ink-soft);
+    margin: 0 0 24px;
+  }
+  .meta-strip {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .meta-strip span { display: inline-flex; align-items: center; gap: 6px; }
+  .meta-strip strong { color: var(--ink-soft); font-weight: 600; }
+
+  section { margin: 56px 0; }
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 30px; font-weight: 400;
+    line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 16px; color: var(--ink);
+  }
+  h3 {
+    font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600;
+    letter-spacing: -0.005em; margin: 26px 0 10px; color: var(--ink);
+  }
+  p { margin: 14px 0; color: var(--ink-soft); }
+  p strong { color: var(--ink); font-weight: 600; }
+  em { font-style: italic; color: var(--ink); }
+  a { color: var(--coral-deep); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--coral); }
+  ul, ol { margin: 14px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 6px 0; }
+  ul li::marker { color: var(--coral); }
+  code {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.88em;
+    background: var(--panel); padding: 1px 6px; border-radius: 3px;
+    color: var(--ink); border: 1px solid var(--line-soft);
+  }
+  pre {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.55;
+    background: #F8F5EC; padding: 16px 18px; border-radius: 6px;
+    border: 1px solid var(--line); overflow-x: auto; color: var(--ink);
+    margin: 18px 0;
+  }
+  pre code { background: none; padding: 0; border: none; }
+
+  .callout {
+    margin: 22px 0; padding: 16px 20px; border-left: 2px solid var(--coral);
+    background: var(--coral-bg); border-radius: 0 4px 4px 0;
+  }
+  .callout.tip { border-left-color: var(--sage); background: var(--sage-bg); }
+  .callout.warn { border-left-color: var(--amber); background: var(--amber-bg); }
+  .callout-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px;
+    color: var(--coral-deep);
+  }
+  .callout.tip .callout-label { color: var(--sage); }
+  .callout.warn .callout-label { color: #936A1D; }
+  .callout p { margin: 0; color: var(--ink); font-size: 14.5px; }
+
+  .pull {
+    font-family: 'Source Serif 4', Georgia, serif; font-weight: 300;
+    font-size: 26px; line-height: 1.32; letter-spacing: -0.01em;
+    color: var(--ink); margin: 36px 0; padding: 0 24px;
+    border-left: 3px solid var(--coral);
+  }
+
+  /* Bad/Better/Best cards */
+  .bbb {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 22px 0;
+  }
+  .bbb-card {
+    padding: 16px 18px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 6px;
+  }
+  .bbb-card.bad { border-top: 2px solid #B85556; }
+  .bbb-card.better { border-top: 2px solid var(--amber); }
+  .bbb-card.best { border-top: 2px solid var(--sage); }
+  .bbb-card h4 {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; margin: 0 0 8px;
+  }
+  .bbb-card.bad h4 { color: #B85556; }
+  .bbb-card.better h4 { color: #936A1D; }
+  .bbb-card.best h4 { color: var(--sage); }
+  .bbb-card p { margin: 0; font-size: 13px; }
+  .bbb-card code { font-size: 11.5px; }
+
+  /* Simulation wrapper */
+  .sim {
+    margin: 36px -20px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 6px; overflow: hidden;
+  }
+  .sim-header {
+    padding: 12px 22px; border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .sim-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--sage);
+  }
+  .sim-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 17px;
+    color: var(--ink); font-weight: 400;
+  }
+  .sim-body { padding: 24px 22px; }
+
+  /* ---------- Sim 3: step-through ---------- */
+  .booking-mode-bar {
+    display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;
+  }
+  .booking-mode {
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    padding: 6px 12px; border: 1px solid var(--line); background: var(--paper);
+    color: var(--muted); border-radius: 4px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .booking-mode:hover { color: var(--ink); }
+  .booking-mode.active {
+    background: var(--coral); color: white; border-color: var(--coral);
+  }
+
+  .booking-steps {
+    display: flex; gap: 4px; margin-bottom: 18px; align-items: stretch;
+    overflow-x: auto; padding-bottom: 8px;
+  }
+  .booking-step {
+    flex: 1; min-width: 64px;
+    background: var(--paper); border: 1px solid var(--line); border-radius: 5px;
+    padding: 10px 6px; text-align: center; cursor: pointer;
+    transition: all 0.2s ease; position: relative;
+  }
+  .booking-step:hover { border-color: var(--ink-soft); }
+  .booking-step.active {
+    border-color: var(--coral); background: var(--coral-bg);
+    box-shadow: 0 0 0 2px var(--coral-bg);
+  }
+  .booking-step.passed {
+    border-color: var(--sage); background: var(--sage-bg);
+  }
+  .booking-step.skipped {
+    opacity: 0.4; background: var(--panel);
+  }
+  .booking-step.skipped.active {
+    opacity: 0.7; border-color: var(--muted-2);
+  }
+  .booking-step-num {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 700;
+    color: var(--muted);
+  }
+  .booking-step.active .booking-step-num { color: var(--coral-deep); }
+  .booking-step.passed .booking-step-num { color: var(--sage); }
+  .booking-step-label {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 500;
+    color: var(--ink-soft); margin-top: 4px; line-height: 1.25;
+  }
+  .booking-step.skipped .booking-step-label {
+    text-decoration: line-through; color: var(--muted-2);
+  }
+
+  .booking-tabs {
+    display: flex; gap: 4px; border-bottom: 1px solid var(--line);
+    margin-bottom: 0; overflow-x: auto;
+  }
+  .booking-tab {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 500;
+    padding: 8px 12px; background: transparent; border: none;
+    color: var(--muted); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    white-space: nowrap;
+  }
+  .booking-tab:hover { color: var(--ink); }
+  .booking-tab.active { color: var(--coral-deep); border-bottom-color: var(--coral); font-weight: 600; }
+  .booking-tab.has-update {
+    color: var(--ink);
+  }
+  .booking-tab.has-update::after {
+    content: '·'; color: var(--coral); font-size: 18px; line-height: 0;
+    margin-left: 4px; vertical-align: middle;
+  }
+
+  .booking-state-panel {
+    background: #1A1A18; color: #E8E5DE; border-radius: 0 0 4px 4px;
+    padding: 14px 16px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; line-height: 1.6; overflow-x: auto;
+    min-height: 200px; max-height: 320px; overflow-y: auto;
+    margin-bottom: 14px;
+  }
+  .booking-state-panel .lk { color: #A8C5E8; }
+  .booking-state-panel .lv { color: #E8C788; }
+  .booking-state-panel .lcoral { color: #E8A87C; }
+  .booking-state-panel .lsage { color: #A8C088; }
+  .booking-state-panel .lwarn { color: #E89C7C; }
+  .booking-state-panel .ldim { color: #8A8780; }
+  .booking-state-panel .empty {
+    color: #8A8780; font-style: italic; padding: 12px 0;
+  }
+
+  .booking-narration {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 4px;
+    padding: 12px 16px; font-size: 13.5px; color: var(--ink-soft);
+    margin-bottom: 14px; line-height: 1.55;
+  }
+  .booking-narration strong { color: var(--ink); }
+  .booking-narration .narration-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--coral);
+    margin-bottom: 6px;
+  }
+
+  .booking-controls {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .booking-btn {
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500;
+    padding: 7px 14px; background: var(--paper); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 4px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .booking-btn:hover:not(:disabled) { background: var(--panel); border-color: var(--ink-soft); }
+  .booking-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .booking-btn.primary { background: var(--coral); color: white; border-color: var(--coral); }
+  .booking-btn.primary:hover:not(:disabled) { background: var(--coral-deep); border-color: var(--coral-deep); }
+  .booking-progress {
+    margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted);
+  }
+  .booking-progress strong { color: var(--ink); font-weight: 600; }
+
+  .post-footer {
+    margin-top: 80px; padding-top: 30px; border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  }
+  .post-nav-card {
+    padding: 18px 22px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; text-decoration: none; color: var(--ink);
+    transition: border-color 0.15s ease;
+  }
+  .post-nav-card:hover { border-color: var(--coral); }
+  .post-nav-card.next { text-align: right; }
+  .post-nav-card .nav-label {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .post-nav-card .nav-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 18px;
+    font-weight: 400; line-height: 1.25; color: var(--ink);
+  }
+  .post-nav-card.next .nav-title { color: var(--coral-deep); }
+
+  .series-close {
+    padding: 24px 26px; background: var(--coral-bg);
+    border: 1px solid var(--coral); border-radius: 6px;
+    margin-top: 48px;
+  }
+  .series-close h3 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 22px;
+    font-weight: 400; color: var(--ink); margin: 0 0 12px;
+  }
+  .series-close p { margin: 8px 0; font-size: 14px; color: var(--ink); }
+  .series-close .where-next {
+    display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px;
+  }
+  .series-close .where-next a {
+    font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 500;
+    padding: 7px 12px; background: var(--paper);
+    border: 1px solid var(--coral); border-radius: 4px;
+    color: var(--coral-deep); text-decoration: none;
+  }
+  .series-close .where-next a:hover { background: var(--coral); color: white; }
+
+  @media (max-width: 720px) {
+    body { padding: 32px 18px 64px; font-size: 15px; }
+    header.hero h1 { font-size: 34px; }
+    .lede { font-size: 18.5px; }
+    h2 { font-size: 24px; }
+    .pull { font-size: 21px; padding: 0 14px; }
+    .sim { margin: 28px -8px; }
+    .sim-body { padding: 18px 14px; }
+    .bbb { grid-template-columns: 1fr; }
+    .post-footer { grid-template-columns: 1fr; }
+    .post-nav-card.next { text-align: left; }
+    .booking-progress { margin-left: 0; width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="../index.html">Architecture</a><span class="sep">·</span>
+  <a href="../problems.html">Problems</a><span class="sep">·</span>
+  <a href="../what-concord-is.html">Positioning</a><span class="sep">·</span>
+  <a href="index.html" class="current">Blog</a><span class="sep">·</span>
+  <a href="../examples/hotel-booking.html">Examples</a>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Concord blog · Part 3 of 3</div>
+  <h1>A day in the life</h1>
+  <p class="lede">Two parts of theory. One part of seeing it work. The contract isn't real until you watch it execute — so I'll trace a hotel booking through Concord end-to-end and let you toggle the contract on, off, and somewhere in between.</p>
+  <div class="meta-strip">
+    <span><strong>Read</strong> ~8 min</span>
+    <span><strong>Series</strong> 3 / 3</span>
+    <span><strong>Previous</strong> ← Contract, not runtime</span>
+  </div>
+</header>
+
+<section>
+  <h2>The scenario</h2>
+  <p>A user opens the app and types: <em>"Find me a hotel in Lisbon for July 14-17, around $200 a night, somewhere walkable to Belém."</em></p>
+  <p>What follows is the kind of work that didn't really exist three years ago. An agent reads the request, plans, searches a hotel API, ranks the results, recommends one, asks for approval over $500, books the room, charges the card, writes a confirmation, and offers a 24-hour cancellation grace period. Nine steps, give or take, depending on how you count.</p>
+  <p>Behind those nine steps, a lot of records are being written — or, depending on how the system is built, a lot of records that <em>should be</em> written aren't. The simulation below plays out the same booking three ways: with the full Concord contract, with the minimal useful subset, and with no Concord at all.</p>
+</section>
+
+<div class="sim">
+  <div class="sim-header">
+    <span class="sim-label">Interactive</span>
+    <span class="sim-title">Hotel booking, traced through the contract</span>
+  </div>
+  <div class="sim-body">
+    <div class="booking-mode-bar" id="booking-mode-bar">
+      <button class="booking-mode active" data-mode="full">Full contract</button>
+      <button class="booking-mode" data-mode="minimal">Minimal Concord</button>
+      <button class="booking-mode" data-mode="without">Without Concord</button>
+    </div>
+
+    <div class="booking-steps" id="booking-steps"></div>
+
+    <div class="booking-tabs" id="booking-tabs">
+      <button class="booking-tab active" data-tab="command">command</button>
+      <button class="booking-tab" data-tab="policy">policy</button>
+      <button class="booking-tab" data-tab="approval">approval</button>
+      <button class="booking-tab" data-tab="effects">effects</button>
+      <button class="booking-tab" data-tab="artifacts">artifacts</button>
+      <button class="booking-tab" data-tab="audit">audit</button>
+    </div>
+    <div class="booking-state-panel" id="booking-state"></div>
+
+    <div class="booking-narration" id="booking-narration"></div>
+
+    <div class="booking-controls">
+      <button class="booking-btn primary" id="booking-play">▶ Play</button>
+      <button class="booking-btn" id="booking-prev">◀ Back</button>
+      <button class="booking-btn" id="booking-next">Forward ▶</button>
+      <button class="booking-btn" id="booking-reset">Reset</button>
+      <span class="booking-progress" id="booking-progress"><strong>0</strong> / 9 steps</span>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2>Bad, better, best</h2>
+  <p>The simulation makes the spectrum visible. In prose form, here's the same thing said three times.</p>
+  <div class="bbb">
+    <div class="bbb-card bad">
+      <h4>Bad</h4>
+      <p>The agent calls <code>book_hotel()</code> directly. The charge succeeds. A retry double-charges. The duplicate is found three days later in a postmortem.</p>
+    </div>
+    <div class="bbb-card better">
+      <h4>Better</h4>
+      <p>The agent proposes a command. Policy fires. The connector has an idempotency key. A duplicate would be deduped at the connector layer, but the policy decision and approval trail aren't durable.</p>
+    </div>
+    <div class="bbb-card best">
+      <h4>Best</h4>
+      <p>Full chain. Command, policy, approval packet, artifact snapshot, idempotency, compensation graph. The 24-hour cancellation is one row away because the compensation was declared at registration time.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>What the developer actually does</h2>
+  <p>The simulation makes Concord look like a lot. From the runtime's perspective, it is. From the developer's perspective, it's <em>declarations</em>, not workflow code.</p>
+  <p>For the hotel booking, the developer writes something like:</p>
+<pre><code>@command_type(
+  name="book_hotel",
+  policy=hotel_booking_policy,
+  approval=hotel_booking_approval,
+  produces=[reservation_confirmation],
+  invokes=[hotel_booking.book_hotel],
+  cancellation_mode="compensate_then_stop",
+)
+class BookHotel(CommandPayload):
+  hotel_id: str
+  checkin: date
+  checkout: date
+  total_cost: Decimal
+
+def hotel_booking_policy(cmd, ctx) -> Decision:
+  if cmd.payload.total_cost > 500:
+    return require_approval("cost_threshold_500")
+  return allow()</code></pre>
+  <p>That's most of it. The workflow body — the branching on the policy decision, the request to the approval queue, the wait for the human, the invocation of DBOS, the writing of the artifact — Concord generates from the declaration. The developer wrote the <em>what</em>; Concord handled the <em>how</em>.</p>
+  <p class="pull">The win isn't the workflow body. The win is that there <em>is</em> no workflow body — just declarations the runtime knows how to interpret.</p>
+  <p>This is the day-in-the-life shape. You spend most of your time editing declarations: command types, policies, artifact schemas, connector contracts. You spend almost no time writing workflow plumbing. When something breaks, you read the <code>domain_events</code> table and you can see the contract's trace through your code, in your terms.</p>
+</section>
+
+<section>
+  <h2>The minimal useful Concord</h2>
+  <p>One worry I hear: "this is too much for my small app." Sometimes true. The smallest useful Concord is four primitives:</p>
+  <ul>
+    <li><strong>Command</strong> — the named action and its payload</li>
+    <li><strong>Policy</strong> — the function that returns allow/deny</li>
+    <li><strong>DBOS step</strong> — the side effect, executed durably</li>
+    <li><strong>Artifact</strong> — the durable output</li>
+  </ul>
+  <p>Approvals, memory, compensation, swarms — all opt-in per command type. The "minimal Concord" mode in the simulation above shows what that looks like for a booking with policy="allow" instead of "require_approval." Three steps are skipped. The remaining six still produce the audit trail and the artifact.</p>
+  <p>The point isn't that everything has to be Tier 4. The point is that <em>when something earns Tier 4 treatment</em>, the framework already knows what that means.</p>
+</section>
+
+<section>
+  <h2>Three counterarguments I take seriously</h2>
+
+  <h3>"This is a lot of ceremony for booking a hotel"</h3>
+  <p>For a single hotel booking, yes. For an app that books hotels and also runs vendor syncs and also handles support escalations and also approves expense reports, the ceremony amortizes. Concord's bet is that most apps reach the second shape within a year of starting at the first. If your app is going to stay at one workflow, vanilla DBOS is plenty.</p>
+
+  <h3>"What if I just want a workflow engine?"</h3>
+  <p>Then use DBOS or Temporal directly. Concord is opt-in above them — it doesn't intercept anything. You can run a Concord-free workflow next to a Concord-governed one in the same app. There's no exclusivity.</p>
+
+  <h3>"What about lock-in?"</h3>
+  <p>The <code>DurableRuntime</code> protocol is the answer I've designed for. Domain code imports the protocol, not the runtime. DBOS is the default adapter; Temporal is the named alternate. If the protocol turns out to be wrong — too narrow, missing methods — that's a Concord problem to fix. The locked-in surface is small by design.</p>
+  <p>The honest version: I've shipped one adapter so far. The protocol is a promise. Until the Temporal adapter ships, the lock-in concern is reasonable to hold.</p>
+</section>
+
+<section>
+  <h2>Where I might be wrong</h2>
+
+  <h3>The contract may not survive a really weird use case</h3>
+  <p>I built Concord against a few archetypes — hotel booking, vendor sync, revenue investigation swarm. I think the primitive set generalizes, but I'd expect the first novel use case to find an edge I didn't think about. The mitigation isn't to ship more primitives; it's to keep the primitive set small enough that adding one isn't catastrophic.</p>
+
+  <h3>The Domain Registry may be too rigid for fast-changing apps</h3>
+  <p>Registration-time validation is great for catching mismatches early. It's bad for teams that want to ship five new command types a week and don't want to wait for a build to validate them. Hot-reloadable registry entries are doable but I haven't built them.</p>
+
+  <h3>I might be over-fitting to enterprise audit requirements</h3>
+  <p>The "audit tier 4" treatment is shaped by what regulated industries need. If you're building a consumer app where nothing is regulated and everything is fast, the tier might feel performative. I think this is the wrong objection — even consumer apps need to know which charge was authorized — but I'd want to test the framing against a few consumer use cases before being confident.</p>
+</section>
+
+<div class="series-close">
+  <h3>End of series</h3>
+  <p>Three parts. The argument was: agents are starting to initiate real work, durability isn't enough, and a contract layer is what makes the work governable. Concord is one shape of that contract. There are others.</p>
+  <p>If you want to go deeper, here's where each piece lives.</p>
+  <div class="where-next">
+    <a href="../index.html">Full architecture spec ↗</a>
+    <a href="../what-concord-is.html">What Concord is &amp; isn't ↗</a>
+    <a href="../problems.html">The ten problems ↗</a>
+    <a href="../examples/hotel-booking.html">Hotel-booking worked example ↗</a>
+    <a href="../examples/vendor-data-sync.html">Vendor-sync example ↗</a>
+    <a href="../examples/revenue-investigation-swarm.html">Swarm example ↗</a>
+  </div>
+</div>
+
+<div class="post-footer">
+  <a class="post-nav-card" href="part-2-contract-not-runtime.html">
+    <div class="nav-label">← Part 2</div>
+    <div class="nav-title">Contract, not runtime</div>
+  </a>
+  <a class="post-nav-card next" href="index.html">
+    <div class="nav-label">Series →</div>
+    <div class="nav-title">Back to the index</div>
+  </a>
+</div>
+
+<script>
+(function() {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  // Step definitions
+  const steps = [
+    { id: 1, label: 'Propose',  narration: { full: 'Agent extracts intent from the user prompt. It does not call the connector — it proposes a command for Concord to evaluate.', minimal: 'Agent extracts intent and proposes a command.', without: 'Agent extracts intent. No command primitive — the next call will go straight to the connector.' } },
+    { id: 2, label: 'Command',  narration: { full: 'A row is inserted into commands. Status is pending. The proposal is now durable — the agent\'s reasoning isn\'t.', minimal: 'A row is inserted into commands. Status is pending.', without: 'No command row. The intent lives only in the agent\'s transient context.' } },
+    { id: 3, label: 'Policy',   narration: { full: 'Policy evaluates the command. Cost is $612 — over the $500 threshold. Decision: require_approval. Command status moves to pending_approval.', minimal: 'Policy evaluates the command. Cost is below threshold. Decision: allow.', without: 'No policy layer. The booking proceeds with whatever authority the agent had.' } },
+    { id: 4, label: 'Approval', narration: { full: 'Approval packet is built — the review_packet contains the hotel, dates, cost, cancellation terms, and the agent\'s reasoning. A request is sent to the user.', minimal: '(skipped — minimal mode policy returned allow)', without: '(no approval layer)' } },
+    { id: 5, label: 'Granted',  narration: { full: 'User reviews the packet and approves. Approval row\'s status moves to granted. Command status moves to ready.', minimal: '(skipped)', without: '(no approval layer)' } },
+    { id: 6, label: 'Workflow', narration: { full: 'DBOS workflow wf_8d2 starts. The workflow body is generated from the command_type declaration. Command status moves to running.', minimal: 'DBOS workflow wf_8e3 starts. Command status moves to running.', without: 'A workflow runs somewhere — maybe DBOS, maybe a raw thread. No durable command record to tie it to.' } },
+    { id: 7, label: 'Connector', narration: { full: 'Connector operation hotel_booking.book is invoked. Idempotency key is cmd_7f3:book. A retry will dedupe at the connector layer.', minimal: 'Connector operation hotel_booking.book is invoked, idempotency_key=cmd_8b2:book.', without: 'Direct call to the hotel API. No idempotency key set. A retry will book twice.' } },
+    { id: 8, label: 'Artifact', narration: { full: 'Reservation confirmation is written as artifact art_4e1. Typed, versioned, immutable. Payment connector also fires, with its own idempotency key.', minimal: 'Reservation confirmation is written as artifact art_5f0.', without: 'API response is captured into application code. No artifact schema. Future readers will guess at the shape.' } },
+    { id: 9, label: 'Audit',    narration: { full: 'A row is written to domain_events with purpose=audit, event_type=command.succeeded. The whole trail is one query away.', minimal: 'A row is written to domain_events. Lightweight audit trail.', without: 'OTel span closes. No durable record of consequence — only of execution.' } }
+  ];
+
+  // Tab state per (mode, step)
+  // Each cell is HTML string for the dark code panel.
+  function lc(s) { return s; }
+  const colors = {
+    k: (s) => `<span class="lk">${s}</span>`,
+    v: (s) => `<span class="lv">${s}</span>`,
+    c: (s) => `<span class="lcoral">${s}</span>`,
+    s: (s) => `<span class="lsage">${s}</span>`,
+    w: (s) => `<span class="lwarn">${s}</span>`,
+    d: (s) => `<span class="ldim">${s}</span>`
+  };
+  const empty = (msg) => `<div class="empty">${msg||'(nothing recorded at this step)'}</div>`;
+
+  const cmdRow = (status, extra) => `{
+  ${colors.k('"command_id"')}: ${colors.c('"cmd_7f3"')},
+  ${colors.k('"type"')}: ${colors.v('"book_hotel"')},
+  ${colors.k('"status"')}: ${colors.c('"'+status+'"')},
+  ${colors.k('"actor"')}: ${colors.v('"agent:hotel_bot"')},
+  ${colors.k('"payload"')}: {
+    ${colors.k('"hotel_id"')}: ${colors.v('"hotel_ipsum"')},
+    ${colors.k('"checkin"')}: ${colors.v('"2026-07-14"')},
+    ${colors.k('"checkout"')}: ${colors.v('"2026-07-17"')},
+    ${colors.k('"total_cost"')}: ${colors.v('612.00')}
+  }${extra||''}
+}`;
+
+  const cmdRowMin = (status) => `{
+  ${colors.k('"command_id"')}: ${colors.c('"cmd_8b2"')},
+  ${colors.k('"type"')}: ${colors.v('"book_hotel"')},
+  ${colors.k('"status"')}: ${colors.c('"'+status+'"')},
+  ${colors.k('"payload"')}: { ${colors.k('"hotel_id"')}: ${colors.v('"hotel_ipsum"')}, ${colors.k('"checkin"')}: ${colors.v('"2026-07-14"')} }
+}`;
+
+  // Build state[mode][step][tab] = html
+  const state = {};
+
+  // FULL mode
+  state.full = {
+    1: {
+      command: cmdRow('proposed'),
+      policy: empty('Policy not yet evaluated.'),
+      approval: empty('No approval recorded.'),
+      effects: empty('No effects fired yet.'),
+      artifacts: empty('No artifacts yet.'),
+      audit: `${colors.d('[03:14:01]')} ${colors.s('command.proposed')}   command_id=${colors.c('cmd_7f3')}  actor=agent:hotel_bot`
+    },
+    2: {
+      command: cmdRow('pending'),
+      policy: empty('Policy not yet evaluated.'),
+      approval: empty('No approval recorded.'),
+      effects: empty('No effects fired yet.'),
+      artifacts: empty('No artifacts yet.'),
+      audit: `${colors.d('[03:14:01]')} ${colors.s('command.created')}    command_id=${colors.c('cmd_7f3')}  status=pending`
+    },
+    3: {
+      command: cmdRow('pending_approval'),
+      policy: `{
+  ${colors.k('"command_id"')}: ${colors.c('"cmd_7f3"')},
+  ${colors.k('"bundle"')}: ${colors.v('"hotel_booking_policy"')},
+  ${colors.k('"decision"')}: ${colors.w('"require_approval"')},
+  ${colors.k('"reason"')}: ${colors.v('"cost_threshold_500"')},
+  ${colors.k('"evidence"')}: { ${colors.k('"total_cost"')}: ${colors.v('612.00')}, ${colors.k('"threshold"')}: ${colors.v('500')} }
+}`,
+      approval: empty('Approval not yet requested.'),
+      effects: empty('No effects fired yet.'),
+      artifacts: empty('No artifacts yet.'),
+      audit: `${colors.d('[03:14:01]')} ${colors.s('policy.evaluated')}   command_id=${colors.c('cmd_7f3')}  decision=require_approval`
+    },
+    4: {
+      command: cmdRow('pending_approval'),
+      policy: `decision=${colors.w('require_approval')} (from step 3)`,
+      approval: `{
+  ${colors.k('"approval_id"')}: ${colors.c('"apr_2b9"')},
+  ${colors.k('"command_id"')}: ${colors.c('"cmd_7f3"')},
+  ${colors.k('"type"')}: ${colors.v('"hotel_booking_approval"')},
+  ${colors.k('"status"')}: ${colors.w('"requested"')},
+  ${colors.k('"requested_at"')}: ${colors.v('"03:14:01Z"')},
+  ${colors.k('"expires_at"')}: ${colors.v('"04:14:01Z"')},
+  ${colors.k('"review_packet"')}: {
+    ${colors.k('"hotel"')}: ${colors.v('"Hotel Ipsum"')},
+    ${colors.k('"dates"')}: ${colors.v('"Jul 14 → Jul 17"')},
+    ${colors.k('"total_cost"')}: ${colors.v('612.00')},
+    ${colors.k('"cancellation_terms"')}: ${colors.v('"24h grace"')}
+  }
+}`,
+      effects: empty('No effects fired yet.'),
+      artifacts: empty('No artifacts yet.'),
+      audit: `${colors.d('[03:14:01]')} ${colors.s('approval.requested')} command_id=${colors.c('cmd_7f3')}  approval_id=${colors.c('apr_2b9')}`
+    },
+    5: {
+      command: cmdRow('ready'),
+      policy: `decision=${colors.w('require_approval')} (from step 3)`,
+      approval: `{
+  ${colors.k('"approval_id"')}: ${colors.c('"apr_2b9"')},
+  ${colors.k('"command_id"')}: ${colors.c('"cmd_7f3"')},
+  ${colors.k('"status"')}: ${colors.s('"granted"')},
+  ${colors.k('"granted_by"')}: ${colors.v('"user:alex"')},
+  ${colors.k('"granted_at"')}: ${colors.v('"03:14:03Z"')}
+}`,
+      effects: empty('No effects fired yet.'),
+      artifacts: empty('No artifacts yet.'),
+      audit: `${colors.d('[03:14:03]')} ${colors.s('approval.granted')}   command_id=${colors.c('cmd_7f3')}  approval_id=${colors.c('apr_2b9')}  actor=user:alex`
+    },
+    6: {
+      command: cmdRow('running', `,\n  ${colors.k('"dbos_workflow_id"')}: ${colors.c('"wf_8d2"')}`),
+      policy: `decision=${colors.w('require_approval')} (from step 3)`,
+      approval: `status=${colors.s('granted')} (from step 5)`,
+      effects: `{
+  ${colors.k('"workflow_id"')}: ${colors.c('"wf_8d2"')},
+  ${colors.k('"command_id"')}: ${colors.c('"cmd_7f3"')},
+  ${colors.k('"status"')}: ${colors.s('"running"')},
+  ${colors.k('"steps_planned"')}: [
+    ${colors.v('"hotel_booking.book"')},
+    ${colors.v('"stripe.charge"')},
+    ${colors.v('"reservation_confirmation"')}
+  ]
+}`,
+      artifacts: empty('No artifacts yet.'),
+      audit: `${colors.d('[03:14:08]')} ${colors.s('workflow.started')}    command_id=${colors.c('cmd_7f3')}  workflow_id=${colors.c('wf_8d2')}`
+    },
+    7: {
+      command: cmdRow('running', `,\n  ${colors.k('"dbos_workflow_id"')}: ${colors.c('"wf_8d2"')}`),
+      policy: `decision=${colors.w('require_approval')} (from step 3)`,
+      approval: `status=${colors.s('granted')} (from step 5)`,
+      effects: `${colors.s('effect.executed')}  op=hotel_booking.book
+  ${colors.k('command_id')}=${colors.c('cmd_7f3')}
+  ${colors.k('idempotency_key')}=${colors.v('cmd_7f3:book')}
+  ${colors.k('result')}=${colors.v('res_8a2c1')}
+  ${colors.k('latency_ms')}=${colors.v('2840')}
+
+${colors.d('// A duplicate webhook arriving here would be deduped')}
+${colors.d('// at the connector layer by idempotency_key.')}`,
+      artifacts: empty('Connector returned. Artifact will be written next step.'),
+      audit: `${colors.d('[03:14:11]')} ${colors.s('effect.executed')}    command_id=${colors.c('cmd_7f3')}  op=hotel_booking.book  key=cmd_7f3:book`
+    },
+    8: {
+      command: cmdRow('running', `,\n  ${colors.k('"dbos_workflow_id"')}: ${colors.c('"wf_8d2"')}`),
+      policy: `decision=${colors.w('require_approval')} (from step 3)`,
+      approval: `status=${colors.s('granted')} (from step 5)`,
+      effects: `${colors.s('effect.executed')}  op=stripe.charge
+  ${colors.k('idempotency_key')}=${colors.v('cmd_7f3:charge')}
+  ${colors.k('result')}=${colors.v('pi_3MqLk2')}`,
+      artifacts: `{
+  ${colors.k('"artifact_id"')}: ${colors.c('"art_4e1"')},
+  ${colors.k('"schema"')}: ${colors.v('"reservation_confirmation@1"')},
+  ${colors.k('"command_id"')}: ${colors.c('"cmd_7f3"')},
+  ${colors.k('"content"')}: {
+    ${colors.k('"reservation_id"')}: ${colors.v('"res_8a2c1"')},
+    ${colors.k('"hotel_id"')}: ${colors.v('"hotel_ipsum"')},
+    ${colors.k('"checkin"')}: ${colors.v('"2026-07-14"')},
+    ${colors.k('"total_paid"')}: ${colors.v('612.00')}
+  },
+  ${colors.k('"compensation"')}: ${colors.v('"hotel_booking.cancel"')}
+}`,
+      audit: `${colors.d('[03:14:11]')} ${colors.s('artifact.created')}   command_id=${colors.c('cmd_7f3')}  artifact_id=${colors.c('art_4e1')}`
+    },
+    9: {
+      command: cmdRow('succeeded', `,\n  ${colors.k('"dbos_workflow_id"')}: ${colors.c('"wf_8d2"')},\n  ${colors.k('"completed_at"')}: ${colors.v('"03:14:11Z"')}`),
+      policy: `decision=${colors.w('require_approval')} (from step 3)`,
+      approval: `status=${colors.s('granted')} (from step 5)`,
+      effects: `2 effects executed (hotel_booking.book, stripe.charge).
+${colors.d('Compensation declared: hotel_booking.cancel — fires if cancellation_mode=compensate_then_stop is triggered.')}`,
+      artifacts: `1 artifact: ${colors.c('art_4e1')} (reservation_confirmation@1)`,
+      audit: `${colors.d('[03:14:01]')} ${colors.s('command.proposed')}
+${colors.d('[03:14:01]')} ${colors.s('command.created')}
+${colors.d('[03:14:01]')} ${colors.s('policy.evaluated')}     decision=require_approval
+${colors.d('[03:14:01]')} ${colors.s('approval.requested')}
+${colors.d('[03:14:03]')} ${colors.s('approval.granted')}     actor=user:alex
+${colors.d('[03:14:08]')} ${colors.s('workflow.started')}
+${colors.d('[03:14:11]')} ${colors.s('effect.executed')}      op=hotel_booking.book
+${colors.d('[03:14:11]')} ${colors.s('effect.executed')}      op=stripe.charge
+${colors.d('[03:14:11]')} ${colors.s('artifact.created')}     art_4e1
+${colors.d('[03:14:11]')} ${colors.s('command.succeeded')}    cmd_7f3
+
+${colors.d('// One trail. Every row carries command_id=cmd_7f3.')}`
+    }
+  };
+
+  // MINIMAL mode — fewer steps, lighter records
+  state.minimal = {
+    1: {
+      command: cmdRowMin('proposed'),
+      policy: empty('Policy not yet evaluated.'),
+      approval: empty('(approval layer not enabled for this command type)'),
+      effects: empty(), artifacts: empty(),
+      audit: `${colors.d('[03:14:01]')} ${colors.s('command.proposed')}`
+    },
+    2: {
+      command: cmdRowMin('pending'),
+      policy: empty(),
+      approval: empty('(approval layer not enabled for this command type)'),
+      effects: empty(), artifacts: empty(),
+      audit: `${colors.d('[03:14:01]')} ${colors.s('command.created')}`
+    },
+    3: {
+      command: cmdRowMin('ready'),
+      policy: `decision=${colors.s('allow')}  reason=under_threshold`,
+      approval: empty('(approval layer not enabled for this command type)'),
+      effects: empty(), artifacts: empty(),
+      audit: `${colors.d('[03:14:01]')} ${colors.s('policy.evaluated')}     decision=allow`
+    },
+    4: {
+      command: cmdRowMin('ready'),
+      policy: `decision=${colors.s('allow')} (from step 3)`,
+      approval: empty('(this step is skipped in minimal mode)'),
+      effects: empty(), artifacts: empty(),
+      audit: empty('(no event written — approval not in this command\'s contract)')
+    },
+    5: {
+      command: cmdRowMin('ready'),
+      policy: `decision=${colors.s('allow')} (from step 3)`,
+      approval: empty('(this step is skipped in minimal mode)'),
+      effects: empty(), artifacts: empty(),
+      audit: empty('(no event written)')
+    },
+    6: {
+      command: cmdRowMin('running'),
+      policy: `decision=${colors.s('allow')} (from step 3)`,
+      approval: empty('(not enabled)'),
+      effects: `{
+  ${colors.k('"workflow_id"')}: ${colors.c('"wf_8e3"')},
+  ${colors.k('"status"')}: ${colors.s('"running"')}
+}`,
+      artifacts: empty(),
+      audit: `${colors.d('[03:14:02]')} ${colors.s('workflow.started')}   command_id=${colors.c('cmd_8b2')}`
+    },
+    7: {
+      command: cmdRowMin('running'),
+      policy: `decision=${colors.s('allow')} (from step 3)`,
+      approval: empty('(not enabled)'),
+      effects: `${colors.s('effect.executed')}  op=hotel_booking.book  key=${colors.v('cmd_8b2:book')}`,
+      artifacts: empty(),
+      audit: `${colors.d('[03:14:04]')} ${colors.s('effect.executed')}    op=hotel_booking.book`
+    },
+    8: {
+      command: cmdRowMin('running'),
+      policy: `decision=${colors.s('allow')} (from step 3)`,
+      approval: empty('(not enabled)'),
+      effects: `1 effect executed.`,
+      artifacts: `{
+  ${colors.k('"artifact_id"')}: ${colors.c('"art_5f0"')},
+  ${colors.k('"schema"')}: ${colors.v('"reservation_confirmation@1"')}
+}`,
+      audit: `${colors.d('[03:14:04]')} ${colors.s('artifact.created')}   art_5f0`
+    },
+    9: {
+      command: cmdRowMin('succeeded'),
+      policy: `decision=${colors.s('allow')} (from step 3)`,
+      approval: empty('(not enabled)'),
+      effects: `1 effect executed.`,
+      artifacts: `1 artifact: ${colors.c('art_5f0')}`,
+      audit: `${colors.d('[03:14:01]')} ${colors.s('command.proposed')}
+${colors.d('[03:14:01]')} ${colors.s('command.created')}
+${colors.d('[03:14:01]')} ${colors.s('policy.evaluated')}     decision=allow
+${colors.d('[03:14:02]')} ${colors.s('workflow.started')}
+${colors.d('[03:14:04]')} ${colors.s('effect.executed')}      op=hotel_booking.book
+${colors.d('[03:14:04]')} ${colors.s('artifact.created')}     art_5f0
+${colors.d('[03:14:04]')} ${colors.s('command.succeeded')}    cmd_8b2
+
+${colors.d('// Less ceremony. Same shape.')}`
+    }
+  };
+
+  // WITHOUT mode — almost nothing recorded
+  function none() {
+    return {
+      command: empty('No command primitive. The agent will call the connector directly.'),
+      policy: empty('No policy layer.'),
+      approval: empty('No approval layer.'),
+      effects: empty('No effect primitive.'),
+      artifacts: empty('No artifact schema.'),
+      audit: empty('Only OTel spans, scoped to execution.')
+    };
+  }
+  state.without = {};
+  for (let i = 1; i <= 9; i++) state.without[i] = none();
+  state.without[1].audit = empty('Agent intent is transient. No durable record of the proposal.');
+  state.without[6].effects = `${colors.d('// some workflow runs, somewhere.')}
+${colors.d('// no command_id to tie it to. no audit row for the start.')}`;
+  state.without[6].audit = `${colors.d('OTel span:')} ${colors.s('workflow.start')}  duration=ongoing`;
+  state.without[7].effects = `${colors.w('hotel_booking.book')}(hotel_id=hotel_ipsum, …)
+${colors.d('// no idempotency_key.')}
+${colors.d('// a duplicate webhook will book twice.')}`;
+  state.without[7].audit = `${colors.d('OTel span:')} ${colors.s('http.client')}  POST /bookings  200`;
+  state.without[8].artifacts = `${colors.d('// API response was captured into application code.')}
+${colors.d('// no schema. future readers will guess at the shape.')}`;
+  state.without[8].audit = `${colors.d('OTel span:')} ${colors.s('http.client')}  POST /charges  200`;
+  state.without[9].audit = `${colors.d('OTel span:')} ${colors.s('workflow.end')}  status=ok
+
+${colors.d('// What did this run authorize? Unknown.')}
+${colors.d('// Was approval required? Unknown.')}
+${colors.d('// Can it be compensated? Maybe.')}`;
+
+  // ---- Skipped steps by mode ----
+  const skippedByMode = {
+    full: new Set(),
+    minimal: new Set([4, 5]),
+    without: new Set([2, 3, 4, 5])
+  };
+
+  // ---- Render & state machine ----
+  let mode = 'full';
+  let step = 0;       // 0 = not started; 1-9 are steps
+  let activeTab = 'command';
+  let playing = false;
+  let playTimer = null;
+
+  function renderSteps() {
+    const wrap = $('#booking-steps');
+    wrap.innerHTML = steps.map(s => {
+      const skipped = skippedByMode[mode].has(s.id);
+      const active = step === s.id;
+      const passed = step > s.id && !skipped;
+      let cls = 'booking-step';
+      if (active) cls += ' active';
+      if (passed) cls += ' passed';
+      if (skipped) cls += ' skipped';
+      return `<button class="${cls}" data-step="${s.id}">
+        <div class="booking-step-num">${s.id}</div>
+        <div class="booking-step-label">${s.label}</div>
+      </button>`;
+    }).join('');
+    $$('.booking-step').forEach(b => {
+      b.addEventListener('click', () => {
+        pause();
+        step = parseInt(b.dataset.step, 10);
+        renderAll();
+      });
+    });
+  }
+
+  function renderTabs() {
+    // mark tabs that have updates for this step
+    const tabsWithUpdates = computeUpdatedTabs();
+    $$('.booking-tab').forEach(t => {
+      const k = t.dataset.tab;
+      t.classList.toggle('active', k === activeTab);
+      t.classList.toggle('has-update', tabsWithUpdates.has(k) && k !== activeTab);
+    });
+  }
+
+  function computeUpdatedTabs() {
+    // Which tabs gained content vs the previous step?
+    const updated = new Set();
+    if (step < 1) return updated;
+    const cur = state[mode][step];
+    const prev = step > 1 ? state[mode][step-1] : null;
+    Object.keys(cur).forEach(k => {
+      if (!prev || cur[k] !== prev[k]) updated.add(k);
+    });
+    return updated;
+  }
+
+  function renderState() {
+    if (step < 1) {
+      $('#booking-state').innerHTML = `<div class="empty">Click <strong>▶ Play</strong> or step forward to begin.</div>`;
+      return;
+    }
+    const html = state[mode][step][activeTab];
+    $('#booking-state').innerHTML = html;
+  }
+
+  function renderNarration() {
+    if (step < 1) {
+      $('#booking-narration').innerHTML = `<div class="narration-label">Step 0</div><div>Select a mode above. The full contract is selected by default — that's the path a high-stakes hotel booking would actually take.</div>`;
+      return;
+    }
+    const s = steps[step-1];
+    const txt = s.narration[mode];
+    const skipped = skippedByMode[mode].has(s.id);
+    $('#booking-narration').innerHTML = `<div class="narration-label">Step ${s.id} · ${s.label}${skipped?' (skipped)':''}</div><div>${txt}</div>`;
+  }
+
+  function renderProgress() {
+    $('#booking-progress').innerHTML = `<strong>${step}</strong> / 9 steps`;
+  }
+
+  function renderAll() {
+    renderSteps();
+    renderTabs();
+    renderState();
+    renderNarration();
+    renderProgress();
+  }
+
+  function pause() {
+    playing = false;
+    if (playTimer) { clearTimeout(playTimer); playTimer = null; }
+    $('#booking-play').textContent = '▶ Play';
+  }
+
+  function play() {
+    if (step >= 9) step = 0;
+    playing = true;
+    $('#booking-play').textContent = '⏸ Pause';
+    const tick = () => {
+      if (!playing) return;
+      step++;
+      if (step > 9) { pause(); return; }
+      renderAll();
+      if (step < 9) playTimer = setTimeout(tick, 1100);
+      else pause();
+    };
+    tick();
+  }
+
+  $('#booking-play').addEventListener('click', () => {
+    if (playing) pause(); else play();
+  });
+  $('#booking-prev').addEventListener('click', () => {
+    pause();
+    if (step > 0) step--;
+    renderAll();
+  });
+  $('#booking-next').addEventListener('click', () => {
+    pause();
+    if (step < 9) step++;
+    renderAll();
+  });
+  $('#booking-reset').addEventListener('click', () => {
+    pause();
+    step = 0;
+    activeTab = 'command';
+    renderAll();
+  });
+
+  $$('.booking-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      activeTab = t.dataset.tab;
+      renderTabs();
+      renderState();
+    });
+  });
+
+  $$('.booking-mode').forEach(b => {
+    b.addEventListener('click', () => {
+      pause();
+      $$('.booking-mode').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      mode = b.dataset.mode;
+      step = 0;
+      activeTab = 'command';
+      renderAll();
+    });
+  });
+
+  renderAll();
+})();
+</script>
+
+</body>
+</html>

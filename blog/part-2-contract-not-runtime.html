@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contract, not runtime · Concord blog · Part 2</title>
+<meta name="description" content="Concord is not DBOS, not LangGraph, not OPA. Part 2 draws the layer boundary with an interactive layer stack, an audit-tier picker, and a clickable capability graph.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F0EEE6; --paper-2: #E8E6DD;
+    --panel: #F5F3EB; --panel-2: #EFEDE3;
+    --ink: #141413; --ink-soft: #2D2A26;
+    --muted: #5D5A52; --muted-2: #87837A;
+    --line: #D4D0C4; --line-soft: #E2DFD4;
+    --coral: #D97757; --coral-deep: #B95A3D; --coral-bg: #F3E3D9;
+    --sage: #6E7A55; --sage-bg: #E8EAD8;
+    --plum: #7E5A6B; --plum-bg: #ECE0E6;
+    --amber: #B68A2E; --amber-bg: #F4ECD7;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; padding: 48px 32px 96px;
+    background: var(--paper); color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 15.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    max-width: 760px; margin-left: auto; margin-right: auto;
+  }
+  .site-nav {
+    display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+    font-size: 12.5px; color: var(--muted); margin-bottom: 28px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  }
+  .site-nav a { color: var(--muted); text-decoration: none; transition: color 0.15s ease; }
+  .site-nav a:hover { color: var(--coral-deep); }
+  .site-nav a.current { color: var(--ink); font-weight: 600; }
+  .site-nav .sep { color: var(--muted-2); }
+
+  header.hero { margin: 36px 0 56px; }
+  .eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--coral);
+    margin-bottom: 18px;
+  }
+  header.hero h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 400; font-size: 48px; line-height: 1.08; letter-spacing: -0.025em;
+    color: var(--ink); margin: 0 0 22px;
+  }
+  .lede {
+    font-family: 'Source Serif 4', Georgia, serif; font-weight: 300;
+    font-size: 21px; line-height: 1.45; color: var(--ink-soft);
+    margin: 0 0 24px;
+  }
+  .meta-strip {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .meta-strip span { display: inline-flex; align-items: center; gap: 6px; }
+  .meta-strip strong { color: var(--ink-soft); font-weight: 600; }
+
+  section { margin: 56px 0; }
+  h2 {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 30px; font-weight: 400;
+    line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 16px; color: var(--ink);
+  }
+  h3 {
+    font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600;
+    letter-spacing: -0.005em; margin: 26px 0 10px; color: var(--ink);
+  }
+  p { margin: 14px 0; color: var(--ink-soft); }
+  p strong { color: var(--ink); font-weight: 600; }
+  em { font-style: italic; color: var(--ink); }
+  a { color: var(--coral-deep); text-decoration: underline; text-underline-offset: 3px; }
+  a:hover { color: var(--coral); }
+  ul, ol { margin: 14px 0; padding-left: 22px; color: var(--ink-soft); }
+  li { margin: 6px 0; }
+  ul li::marker { color: var(--coral); }
+  code {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.88em;
+    background: var(--panel); padding: 1px 6px; border-radius: 3px;
+    color: var(--ink); border: 1px solid var(--line-soft);
+  }
+  pre {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.55;
+    background: #F8F5EC; padding: 16px 18px; border-radius: 6px;
+    border: 1px solid var(--line); overflow-x: auto; color: var(--ink);
+    margin: 18px 0;
+  }
+  pre code { background: none; padding: 0; border: none; }
+
+  .callout {
+    margin: 22px 0; padding: 16px 20px; border-left: 2px solid var(--coral);
+    background: var(--coral-bg); border-radius: 0 4px 4px 0;
+  }
+  .callout.tip { border-left-color: var(--sage); background: var(--sage-bg); }
+  .callout.warn { border-left-color: var(--amber); background: var(--amber-bg); }
+  .callout-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; margin-bottom: 4px;
+    color: var(--coral-deep);
+  }
+  .callout.tip .callout-label { color: var(--sage); }
+  .callout.warn .callout-label { color: #936A1D; }
+  .callout p { margin: 0; color: var(--ink); font-size: 14.5px; }
+  .callout p + p { margin-top: 8px; }
+
+  .pull {
+    font-family: 'Source Serif 4', Georgia, serif; font-weight: 300;
+    font-size: 26px; line-height: 1.32; letter-spacing: -0.01em;
+    color: var(--ink); margin: 36px 0; padding: 0 24px;
+    border-left: 3px solid var(--coral);
+  }
+
+  /* Simulation wrapper */
+  .sim {
+    margin: 36px -20px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: 6px; overflow: hidden;
+  }
+  .sim-header {
+    padding: 12px 22px; border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .sim-label {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--sage);
+  }
+  .sim-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 17px;
+    color: var(--ink); font-weight: 400;
+  }
+  .sim-body { padding: 24px 22px; }
+
+  /* ---------- Sim 2a: Layer stack ---------- */
+  .stack-wrap { display: grid; grid-template-columns: 240px 1fr; gap: 22px; align-items: flex-start; }
+  .stack-col { display: flex; flex-direction: column; gap: 6px; }
+  .stack-band {
+    padding: 14px 16px; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 5px; cursor: pointer;
+    transition: all 0.18s ease; position: relative;
+  }
+  .stack-band:hover { border-color: var(--ink-soft); background: var(--panel); }
+  .stack-band.active {
+    border-color: var(--coral); background: var(--coral-bg);
+    box-shadow: -3px 0 0 var(--coral);
+  }
+  .stack-band-name {
+    font-family: 'JetBrains Mono', monospace; font-size: 13.5px; font-weight: 600;
+    color: var(--ink);
+  }
+  .stack-band-sub {
+    font-family: 'Inter', sans-serif; font-size: 11.5px; color: var(--muted);
+    margin-top: 2px;
+  }
+  .stack-band.active .stack-band-sub { color: var(--coral-deep); }
+  .stack-panel {
+    padding: 20px 22px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 6px;
+    min-height: 280px;
+  }
+  .stack-panel-eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--coral);
+    margin-bottom: 6px;
+  }
+  .stack-panel-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 22px;
+    font-weight: 400; color: var(--ink); margin: 0 0 10px;
+  }
+  .stack-panel-desc { font-size: 14px; color: var(--ink-soft); margin: 0 0 14px; line-height: 1.55; }
+  .stack-split {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;
+  }
+  .stack-cell { padding: 12px 14px; background: var(--panel); border: 1px solid var(--line-soft); border-radius: 4px; }
+  .stack-cell h4 {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted);
+    margin: 0 0 6px;
+  }
+  .stack-cell ul { margin: 0; padding-left: 16px; }
+  .stack-cell li { font-size: 12.5px; color: var(--ink-soft); margin: 4px 0; }
+  .stack-cell.owns h4 { color: var(--sage); }
+  .stack-cell.notowns h4 { color: #B85556; }
+  .stack-role {
+    margin-top: 14px; padding: 10px 14px; background: var(--coral-bg);
+    border-left: 2px solid var(--coral); border-radius: 0 4px 4px 0;
+    font-size: 13px; color: var(--ink);
+  }
+  .stack-role strong { color: var(--coral-deep); }
+
+  /* ---------- Sim 2b: Audit tier picker ---------- */
+  .tier-controls {
+    display: flex; gap: 14px; align-items: center; margin-bottom: 22px; flex-wrap: wrap;
+  }
+  .tier-controls label {
+    font-family: 'Inter', sans-serif; font-size: 12px; color: var(--muted);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .tier-select {
+    font-family: 'Inter', sans-serif; font-size: 14px;
+    padding: 8px 12px; background: var(--paper); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 4px;
+    min-width: 260px;
+  }
+  .tier-display {
+    display: grid; grid-template-columns: 180px 1fr; gap: 18px;
+  }
+  .tier-badge {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    padding: 18px 20px; text-align: center;
+  }
+  .tier-num {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 56px;
+    font-weight: 300; color: var(--coral); line-height: 1;
+  }
+  .tier-name {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-soft);
+    margin-top: 6px;
+  }
+  .tier-summary {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    padding: 16px 18px;
+  }
+  .tier-summary p { margin: 0 0 12px; font-size: 13.5px; color: var(--ink-soft); }
+  .tier-records { display: flex; flex-direction: column; gap: 6px; }
+  .tier-record {
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px 0; font-size: 12.5px;
+  }
+  .tier-record .tr-icon {
+    display: inline-block; width: 16px; height: 16px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--paper);
+    font-size: 10px; line-height: 14px; text-align: center; color: transparent;
+    flex-shrink: 0;
+  }
+  .tier-record.on .tr-icon { background: var(--sage); border-color: var(--sage); color: white; }
+  .tier-record.on .tr-icon::before { content: '✓'; color: white; font-size: 10px; }
+  .tier-record.off { color: var(--muted-2); }
+  .tier-record.on { color: var(--ink); font-weight: 500; }
+  .tier-record-name { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+
+  /* ---------- Sim 2c: Capability graph ---------- */
+  .graph-wrap { display: grid; grid-template-columns: 1fr 280px; gap: 22px; align-items: flex-start; }
+  .graph-svg-wrap {
+    background: var(--paper); border: 1px solid var(--line); border-radius: 6px;
+    padding: 18px; position: relative; min-height: 460px;
+  }
+  .graph-svg { width: 100%; height: auto; display: block; font-family: 'Inter', sans-serif; }
+  .graph-node-rect {
+    fill: var(--panel); stroke: var(--line); stroke-width: 1;
+    transition: all 0.2s ease; cursor: pointer;
+  }
+  .graph-node:hover .graph-node-rect { stroke: var(--coral-deep); }
+  .graph-node.active .graph-node-rect { fill: var(--coral-bg); stroke: var(--coral); stroke-width: 2; }
+  .graph-node.traced .graph-node-rect { fill: var(--sage-bg); stroke: var(--sage); stroke-width: 1.5; }
+  .graph-node-label { font-size: 11px; font-weight: 600; fill: var(--ink); pointer-events: none; }
+  .graph-node-sub { font-size: 9px; fill: var(--muted); pointer-events: none; font-family: 'JetBrains Mono', monospace; }
+  .graph-edge { stroke: var(--line); stroke-width: 1.2; fill: none; transition: stroke 0.2s ease; }
+  .graph-edge.active { stroke: var(--coral); stroke-width: 1.8; }
+  .graph-edge.traced { stroke: var(--sage); stroke-width: 1.4; }
+
+  .graph-panel {
+    padding: 18px 20px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 6px;
+    min-height: 460px;
+  }
+  .graph-panel-eyebrow {
+    font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--coral);
+    margin-bottom: 6px;
+  }
+  .graph-panel-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--ink);
+    font-weight: 600; margin: 0 0 10px; word-break: break-all;
+  }
+  .graph-panel-desc { font-size: 13px; color: var(--ink-soft); margin: 8px 0; line-height: 1.55; }
+  .graph-panel pre { font-size: 11px; margin: 12px 0 0; padding: 10px 12px; }
+  .graph-controls { margin-top: 12px; }
+  .graph-btn {
+    font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+    padding: 7px 13px; background: var(--paper); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 4px; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .graph-btn:hover:not(:disabled) { background: var(--panel); border-color: var(--ink-soft); }
+  .graph-btn.primary { background: var(--coral); color: white; border-color: var(--coral); }
+  .graph-btn.primary:hover:not(:disabled) { background: var(--coral-deep); border-color: var(--coral-deep); }
+  .graph-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .post-footer {
+    margin-top: 80px; padding-top: 30px; border-top: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  }
+  .post-nav-card {
+    padding: 18px 22px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 6px; text-decoration: none; color: var(--ink);
+    transition: border-color 0.15s ease;
+  }
+  .post-nav-card:hover { border-color: var(--coral); }
+  .post-nav-card.next { text-align: right; }
+  .post-nav-card .nav-label {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .post-nav-card .nav-title {
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 18px;
+    font-weight: 400; line-height: 1.25; color: var(--ink);
+  }
+  .post-nav-card.next .nav-title { color: var(--coral-deep); }
+
+  @media (max-width: 720px) {
+    body { padding: 32px 18px 64px; font-size: 15px; }
+    header.hero h1 { font-size: 34px; }
+    .lede { font-size: 18.5px; }
+    h2 { font-size: 24px; }
+    .pull { font-size: 21px; padding: 0 14px; }
+    .sim { margin: 28px -8px; }
+    .sim-body { padding: 18px 14px; }
+    .stack-wrap, .graph-wrap { grid-template-columns: 1fr; }
+    .stack-split { grid-template-columns: 1fr; }
+    .tier-display { grid-template-columns: 1fr; }
+    .post-footer { grid-template-columns: 1fr; }
+    .post-nav-card.next { text-align: left; }
+    .graph-svg-wrap { overflow-x: auto; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="../index.html">Architecture</a><span class="sep">·</span>
+  <a href="../problems.html">Problems</a><span class="sep">·</span>
+  <a href="../what-concord-is.html">Positioning</a><span class="sep">·</span>
+  <a href="index.html" class="current">Blog</a><span class="sep">·</span>
+  <a href="../examples/hotel-booking.html">Examples</a>
+</nav>
+
+<header class="hero">
+  <div class="eyebrow">Concord blog · Part 2 of 3</div>
+  <h1>Contract, not runtime</h1>
+  <p class="lede">Concord is not DBOS. Not LangGraph. Not OPA. The hard part of explaining it is saying what it's <em>not</em> — and then drawing the line cleanly enough that what's left is obvious.</p>
+  <div class="meta-strip">
+    <span><strong>Read</strong> ~9 min</span>
+    <span><strong>Series</strong> 2 / 3</span>
+    <span><strong>Previous</strong> ← Why agents need a contract</span>
+  </div>
+</header>
+
+<section>
+  <h2>The most common misread</h2>
+  <p>Almost every time I describe Concord, someone replies with one of:</p>
+  <ul>
+    <li>"Oh, so it's a workflow engine?"</li>
+    <li>"It's an OPA wrapper, basically?"</li>
+    <li>"It's LangGraph with extra steps?"</li>
+    <li>"It's just an audit log table?"</li>
+  </ul>
+  <p>None of those are quite right, but they're all in the right neighborhood. The burden is on me to draw the line — and the cleanest way to do that is to walk through the actual layer stack of an app that runs on Concord.</p>
+  <p>Hover the layers below.</p>
+</section>
+
+<div class="sim">
+  <div class="sim-header">
+    <span class="sim-label">Interactive · 1 of 3</span>
+    <span class="sim-title">Layer stack — what each part owns</span>
+  </div>
+  <div class="sim-body">
+    <div class="stack-wrap">
+      <div class="stack-col" id="stack-col"></div>
+      <div class="stack-panel" id="stack-panel"></div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2>The boundary in one paragraph</h2>
+  <p>The agent harness runs the reasoning loop. Concord defines what an action means and what governance applies. DBOS executes the action durably. A policy engine evaluates the rules (or Concord's own policy bundles do). Postgres stores the truth. OTel observes the execution. Every consequential thing in the system is a <strong>command</strong> in Concord's vocabulary; everything else is a layer doing its job underneath.</p>
+  <p class="pull">Concord owns meaning and authority. DBOS owns durable execution. Postgres owns truth. Everything else is plumbing.</p>
+  <p>This is the line that took me longest to find. The first version of Concord tried to be a workflow engine. The second tried to be an agent framework. The third — the current one — tries to be neither. It's the contract that lets the runtime, the harness, the policy engine, and the storage layer talk to each other in one shape.</p>
+</section>
+
+<section>
+  <h2>Not all actions deserve the full contract</h2>
+  <p>The other thing I get wrong when explaining this is implying that <em>every</em> action gets the full ceremony. They don't. Concord defines five audit tiers, and an action's tier decides what records get written and what governance fires.</p>
+  <p>Tier 0 is ephemeral — log it to stdout and move on. Tier 4 is high-risk, regulated, and gets the full contract: command, policy decision, approval packet, artifact snapshot, idempotency, compensation, durable audit. Most actions live in the middle.</p>
+  <p>Try a few in the picker below.</p>
+</section>
+
+<div class="sim">
+  <div class="sim-header">
+    <span class="sim-label">Interactive · 2 of 3</span>
+    <span class="sim-title">Audit tier picker — what does this action need?</span>
+  </div>
+  <div class="sim-body">
+    <div class="tier-controls">
+      <label for="tier-action">Action</label>
+      <select class="tier-select" id="tier-action">
+        <option value="format_response">Format response text</option>
+        <option value="validate_input">Validate input</option>
+        <option value="read_query">Read-only SQL query</option>
+        <option value="recommend">Generate recommendation</option>
+        <option value="propose_memory">Propose memory candidate</option>
+        <option value="write_memory">Write memory</option>
+        <option value="send_slack">Send Slack message</option>
+        <option value="spawn_subagent">Spawn subagent</option>
+        <option value="book_hotel" selected>Book hotel</option>
+        <option value="charge_payment">Charge payment</option>
+        <option value="change_perms">Change user permissions</option>
+      </select>
+    </div>
+    <div class="tier-display">
+      <div class="tier-badge">
+        <div class="tier-num" id="tier-num">4</div>
+        <div class="tier-name" id="tier-name">High-risk</div>
+      </div>
+      <div class="tier-summary">
+        <p id="tier-desc">Booking a hotel commits a customer to a payment, a date, and a third-party contract. It needs the full chain: a command row, a policy decision, an approval packet, an artifact snapshot, an idempotency key, and a compensation path.</p>
+        <div class="tier-records" id="tier-records"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2>The capability graph</h2>
+  <p>Once you accept that not every action is the same, the next question is: how does the system know what an action <em>is</em>? Concord's answer is the <strong>Domain Registry</strong> — a capability graph that compiles at app startup from declarations spread across the codebase.</p>
+  <p>The graph starts at an agent role and walks down through skills, tools, command types, and the policies, approvals, artifacts, and connector operations each command is tied to. Clicking a node below shows you what kind of declaration produces it.</p>
+</section>
+
+<div class="sim">
+  <div class="sim-header">
+    <span class="sim-label">Interactive · 3 of 3</span>
+    <span class="sim-title">Capability graph — hotel_booking_agent</span>
+  </div>
+  <div class="sim-body">
+    <div class="graph-wrap">
+      <div class="graph-svg-wrap">
+        <svg class="graph-svg" viewBox="0 0 420 480" preserveAspectRatio="xMidYMin meet" id="cap-graph">
+          <!-- Edges -->
+          <g id="cap-edges">
+            <path class="graph-edge" data-edge="agent-skill" d="M 210 50 V 95"/>
+            <path class="graph-edge" data-edge="skill-tool" d="M 210 130 V 175"/>
+            <path class="graph-edge" data-edge="tool-cmd" d="M 210 210 V 255"/>
+            <path class="graph-edge" data-edge="cmd-policy" d="M 175 290 Q 130 320 100 340"/>
+            <path class="graph-edge" data-edge="cmd-approval" d="M 195 290 Q 175 320 175 340"/>
+            <path class="graph-edge" data-edge="cmd-artifact" d="M 225 290 Q 245 320 245 340"/>
+            <path class="graph-edge" data-edge="cmd-connector" d="M 245 290 Q 290 320 320 340"/>
+            <path class="graph-edge" data-edge="connector-contract" d="M 320 375 V 410"/>
+          </g>
+          <!-- Nodes -->
+          <g class="graph-node" data-node="agent" transform="translate(130, 20)">
+            <rect class="graph-node-rect" width="160" height="30" rx="4"/>
+            <text class="graph-node-label" x="80" y="14" text-anchor="middle">AgentRole</text>
+            <text class="graph-node-sub" x="80" y="25" text-anchor="middle">hotel_booking_agent</text>
+          </g>
+          <g class="graph-node" data-node="skill" transform="translate(130, 100)">
+            <rect class="graph-node-rect" width="160" height="30" rx="4"/>
+            <text class="graph-node-label" x="80" y="14" text-anchor="middle">Skill</text>
+            <text class="graph-node-sub" x="80" y="25" text-anchor="middle">hotel_booking_skill@1.4.2</text>
+          </g>
+          <g class="graph-node" data-node="tool" transform="translate(140, 180)">
+            <rect class="graph-node-rect" width="140" height="30" rx="4"/>
+            <text class="graph-node-label" x="70" y="14" text-anchor="middle">Tool</text>
+            <text class="graph-node-sub" x="70" y="25" text-anchor="middle">book_hotel</text>
+          </g>
+          <g class="graph-node" data-node="cmd" transform="translate(135, 260)">
+            <rect class="graph-node-rect" width="150" height="30" rx="4"/>
+            <text class="graph-node-label" x="75" y="14" text-anchor="middle">CommandType</text>
+            <text class="graph-node-sub" x="75" y="25" text-anchor="middle">book_hotel</text>
+          </g>
+          <g class="graph-node" data-node="policy" transform="translate(35, 345)">
+            <rect class="graph-node-rect" width="130" height="30" rx="4"/>
+            <text class="graph-node-label" x="65" y="14" text-anchor="middle">PolicyBundle</text>
+            <text class="graph-node-sub" x="65" y="25" text-anchor="middle">hotel_booking_policy</text>
+          </g>
+          <g class="graph-node" data-node="approval" transform="translate(110, 345)" style="display:none"/>
+          <g class="graph-node" data-node="artifact" transform="translate(180, 345)">
+            <rect class="graph-node-rect" width="130" height="30" rx="4"/>
+            <text class="graph-node-label" x="65" y="14" text-anchor="middle">ArtifactSchema</text>
+            <text class="graph-node-sub" x="65" y="25" text-anchor="middle">reservation_confirmation</text>
+          </g>
+          <g class="graph-node" data-node="connector" transform="translate(255, 345)">
+            <rect class="graph-node-rect" width="130" height="30" rx="4"/>
+            <text class="graph-node-label" x="65" y="14" text-anchor="middle">ConnectorOp</text>
+            <text class="graph-node-sub" x="65" y="25" text-anchor="middle">hotel_booking.book_hotel</text>
+          </g>
+          <g class="graph-node" data-node="contract" transform="translate(255, 415)">
+            <rect class="graph-node-rect" width="130" height="30" rx="4"/>
+            <text class="graph-node-label" x="65" y="14" text-anchor="middle">ConnectorContract</text>
+            <text class="graph-node-sub" x="65" y="25" text-anchor="middle">idempotency · retry · compensate</text>
+          </g>
+        </svg>
+        <div class="graph-controls">
+          <button class="graph-btn primary" id="trace-btn">▶ Trace agent → connector path</button>
+          <button class="graph-btn" id="reset-graph-btn">Reset</button>
+        </div>
+      </div>
+      <div class="graph-panel" id="graph-panel">
+        <div class="graph-panel-eyebrow">Click a node</div>
+        <div class="graph-panel-title">Domain Registry</div>
+        <p class="graph-panel-desc">The Domain Registry is the compiled graph of an app's governed capabilities. It's not a database — it's a build artifact, validated at startup. Click any node in the graph to see what kind of declaration produced it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section>
+  <h2>Three counterarguments I take seriously</h2>
+
+  <h3>"If DBOS owns durability and OPA owns policy, what does Concord actually own?"</h3>
+  <p>Meaning and authority. The capability graph above is the answer in concrete form. Without Concord, those relationships exist but they're implicit — a tool's authorization rule lives in the function body, an artifact's schema lives in the API client, a compensation lives in a try/except somewhere. Concord makes them <em>declared</em>, <em>compiled</em>, and <em>queryable</em>. The result is that a question like "which skills can call this connector operation?" becomes a single graph traversal instead of a codebase search.</p>
+  <p>That's a small thing on a small app. It's the kind of small thing that compounds.</p>
+
+  <h3>"Wouldn't it be simpler to extend an agent framework?"</h3>
+  <p>For a pure-agent app, yes. Take LangGraph, give it a richer audit table, attach a policy hook, you'd get something close. The problem is that <em>most production systems aren't pure-agent</em>. They have a deterministic checkout flow, a scheduled vendor sync, a webhook handler, and an agentic recommender — all in the same codebase, all doing real work, all needing the same governance shape.</p>
+  <p>Agent framework boundaries don't reach into the deterministic code paths. Concord does. The contract has to span both or it's not the contract.</p>
+
+  <h3>"Why not Temporal?"</h3>
+  <p>Temporal is excellent at what it does and is the named future runtime adapter for Concord — specifically because Temporal supports two capabilities that DBOS doesn't yet: native saga compensation and workflow versioning. Concord's spec is runtime-agnostic. Each adapter declares its capabilities (a frozen set), and the registration-time validator refuses to start an app whose catalog requires capabilities the active runtime doesn't have.</p>
+  <p>So the answer to "why not Temporal" is: maybe Temporal, eventually. The point of the contract layer is that the choice is yours.</p>
+</section>
+
+<section>
+  <h2>Where I might be wrong</h2>
+
+  <h3>The abstraction might be too thick</h3>
+  <p>The hardest argument against a contract layer is that it's another box in the architecture diagram. Every box has a maintenance cost and a learning curve. If Concord's abstractions aren't earning their keep on a particular team's workflow, the right move is to delete it and put policy hooks directly in DBOS workflows. Concord should not be religion.</p>
+
+  <h3>Capability declaration is a bet on standardization</h3>
+  <p>The Domain Registry only pays off if teams actually declare their command types, policies, and artifacts in Concord's shape. If teams route around the registry, the graph is incomplete, and an incomplete graph is worse than no graph — it lies. The mitigation is the boundary checker (a CI lint that catches direct runtime imports outside the adapter), but that catches structure, not intent.</p>
+
+  <h3>I'm betting against ORM-style frameworks</h3>
+  <p>The dominant pattern for "structured app data" is still an ORM with a god-object that mutates over a request lifecycle. Concord is closer to event sourcing — immutable rows, append-only events, derived projections. That's a less familiar shape for many teams. I might be underestimating the cost of that unfamiliarity.</p>
+</section>
+
+<div class="callout">
+  <div class="callout-label">Coming up in Part 3</div>
+  <p>A day in the life. We'll walk a hotel booking through the contract end-to-end, with an animated step-through and a toggle that strips Concord away so you can see what the alternative looks like.</p>
+</div>
+
+<div class="post-footer">
+  <a class="post-nav-card" href="part-1-why-agents-need-a-contract.html">
+    <div class="nav-label">← Part 1</div>
+    <div class="nav-title">Why agents need a contract</div>
+  </a>
+  <a class="post-nav-card next" href="part-3-day-in-the-life.html">
+    <div class="nav-label">Part 3 →</div>
+    <div class="nav-title">A day in the life</div>
+  </a>
+</div>
+
+<script>
+(function() {
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  // ===================== SIM 2a: Layer stack =====================
+  const layers = [
+    {
+      key: 'agent',
+      name: 'Agent harness',
+      sub: 'LangGraph / Agents SDK / custom',
+      eyebrow: 'TOP OF STACK',
+      title: 'Agent harness',
+      desc: 'Runs the agent\'s reasoning loop. Knows what the agent decided, which tool it picked, and what arguments it produced. Hands off to Concord before anything with consequence runs.',
+      owns: ['Reasoning loop', 'Tool wrappers', 'Context assembly', 'Subagent spawning'],
+      notowns: ['Durable execution', 'Policy decisions', 'Audit of consequence', 'Cross-system idempotency'],
+      role: 'Makes the agent\'s choices reproducible inside the loop. Stops at the agent\'s edge.'
+    },
+    {
+      key: 'concord',
+      name: 'Concord',
+      sub: 'contract layer',
+      eyebrow: 'CONTRACT',
+      title: 'Concord',
+      desc: 'Defines what an action means, what governance applies, what records the action must produce. Mostly pure functions and Postgres rows. Doesn\'t schedule, doesn\'t retry — it declares.',
+      owns: ['Command type', 'Policy bundle (or call OPA)', 'Effect & artifact schemas', 'Memory semantics', 'Domain audit (one table)', 'Compensation graph', 'Capability graph (Domain Registry)'],
+      notowns: ['Workflow scheduling', 'Step recovery', 'Storage internals', 'Span emission'],
+      role: 'Makes the action\'s meaning durable and queryable. Sits above the runtime, below the harness.'
+    },
+    {
+      key: 'dbos',
+      name: 'DBOS',
+      sub: 'durable runtime',
+      eyebrow: 'RUNTIME',
+      title: 'DBOS (or Temporal)',
+      desc: 'Executes workflows durably. Survives process crashes. Retries failed steps. Implements queues, schedules, durable sleep. Concord\'s default adapter; Temporal is the named alternate.',
+      owns: ['Durable workflow execution', 'Step retries', 'Queues & schedules', 'Transactions', 'Recovery after crash'],
+      notowns: ['Business meaning of work', 'Policy decisions', 'What the workflow records', 'Connector idempotency keys'],
+      role: 'Makes execution survive failure. Concord declares what to run; DBOS makes sure it runs.'
+    },
+    {
+      key: 'postgres',
+      name: 'Postgres',
+      sub: 'system of record',
+      eyebrow: 'STORAGE',
+      title: 'Postgres',
+      desc: 'Holds both Concord\'s domain tables (commands, domain_events, approvals, artifacts, memory) and DBOS\'s runtime state (workflow status, step results). One source of truth, two roles.',
+      owns: ['Durable rows for domain truth', 'DBOS workflow state', 'Foreign key integrity', 'Idempotency tables'],
+      notowns: ['Application logic', 'Agent reasoning', 'Trace data (lives in OTel backend)'],
+      role: 'The single source of truth that both Concord and DBOS commit to. No data lives elsewhere by default.'
+    },
+    {
+      key: 'otel',
+      name: 'OTel',
+      sub: 'observability',
+      eyebrow: 'OBSERVABILITY',
+      title: 'OpenTelemetry',
+      desc: 'Emits traces, spans, metrics, and logs about how execution actually happened. Lives next to Concord, not under it. Concord emits OTel spans for the agent\'s benefit; the durable record is in Postgres.',
+      owns: ['Traces & spans', 'Metrics', 'Structured logs', 'Sampling'],
+      notowns: ['Durable consequence', 'Authorization records', 'Approval lifecycle', 'Compensation outcomes'],
+      role: 'Observes execution in flight. The forgetful surface — the durable record is Postgres.'
+    }
+  ];
+
+  function renderStackCol(activeKey) {
+    const col = $('#stack-col');
+    col.innerHTML = layers.map(l =>
+      `<div class="stack-band${l.key===activeKey?' active':''}" data-layer="${l.key}">
+         <div class="stack-band-name">${l.name}</div>
+         <div class="stack-band-sub">${l.sub}</div>
+       </div>`
+    ).join('');
+    $$('.stack-band').forEach(b => {
+      b.addEventListener('mouseenter', () => renderStackPanel(b.dataset.layer));
+      b.addEventListener('click', () => {
+        renderStackCol(b.dataset.layer);
+        renderStackPanel(b.dataset.layer);
+      });
+    });
+  }
+  function renderStackPanel(key) {
+    const l = layers.find(x => x.key === key);
+    if (!l) return;
+    $('#stack-panel').innerHTML = `
+      <div class="stack-panel-eyebrow">${l.eyebrow}</div>
+      <h3 class="stack-panel-title">${l.title}</h3>
+      <p class="stack-panel-desc">${l.desc}</p>
+      <div class="stack-split">
+        <div class="stack-cell owns">
+          <h4>Owns</h4>
+          <ul>${l.owns.map(x => `<li>${x}</li>`).join('')}</ul>
+        </div>
+        <div class="stack-cell notowns">
+          <h4>Doesn't own</h4>
+          <ul>${l.notowns.map(x => `<li>${x}</li>`).join('')}</ul>
+        </div>
+      </div>
+      <div class="stack-role"><strong>Role:</strong> ${l.role}</div>
+    `;
+  }
+  renderStackCol('concord');
+  renderStackPanel('concord');
+
+  // ===================== SIM 2b: Tier picker =====================
+  const tierData = {
+    format_response:  { tier: 0, name: 'Ephemeral',         desc: 'Pure string transformation. Lives in the response, dies with the response. No durable trace.', records: ['otel'] },
+    validate_input:   { tier: 0, name: 'Ephemeral',         desc: 'A schema check. If it fails, the call rejects with a 400; if it passes, nothing to remember.', records: ['otel'] },
+    read_query:       { tier: 1, name: 'Observable',        desc: 'A read-only query against your own database. Worth tracing (latency, frequency), not worth a domain row.', records: ['otel', 'metric'] },
+    recommend:        { tier: 1, name: 'Observable',        desc: 'An LLM call that produces a recommendation but commits to nothing. The recommendation might become a Tier 2+ artifact if the user accepts it.', records: ['otel', 'metric'] },
+    propose_memory:   { tier: 2, name: 'Domain event',      desc: 'A memory candidate, not yet committed. Records the proposal so a downstream policy can later evaluate it for consent and scope.', records: ['otel', 'event'] },
+    write_memory:     { tier: 3, name: 'Durable',           desc: 'Persisting a memory means future agents will read it. Needs a command, a policy decision, an artifact (the memory row), and durable audit.', records: ['otel', 'command', 'policy', 'artifact', 'event'] },
+    send_slack:       { tier: 3, name: 'Durable',           desc: 'External message that affects a user\'s perception. Durable workflow + idempotency key so retries don\'t double-message.', records: ['otel', 'command', 'policy', 'idempotency', 'event'] },
+    spawn_subagent:   { tier: 3, name: 'Durable',           desc: 'Subagent inherits scope and authority. Needs a parent-child record so cancellation cascades and authority subset is provable.', records: ['otel', 'command', 'policy', 'event'] },
+    book_hotel:       { tier: 4, name: 'High-risk',         desc: 'Commits a customer to a payment, a date, a third-party contract. Full chain: command, policy, approval, artifact snapshot, idempotency, compensation.', records: ['otel', 'command', 'policy', 'approval', 'artifact', 'idempotency', 'compensation', 'event'] },
+    charge_payment:   { tier: 4, name: 'High-risk',         desc: 'Moves money. Regulated. Same chain as book_hotel, with extra emphasis on reconciliation against the payment processor.', records: ['otel', 'command', 'policy', 'approval', 'artifact', 'idempotency', 'compensation', 'event'] },
+    change_perms:     { tier: 4, name: 'High-risk',         desc: 'Changing who can do what is the highest-leverage operation in any system. Full chain plus auditor-friendly review packet.', records: ['otel', 'command', 'policy', 'approval', 'artifact', 'idempotency', 'compensation', 'event'] }
+  };
+  const recordLabels = {
+    otel:         'OTel trace',
+    metric:       'Latency / count metric',
+    event:        'domain_events row',
+    command:      'commands row',
+    policy:       'Policy decision recorded',
+    approval:     'Approval packet',
+    artifact:     'Artifact snapshot',
+    idempotency:  'Idempotency key',
+    compensation: 'Compensation declared'
+  };
+  const allRecords = ['otel','metric','event','command','policy','approval','artifact','idempotency','compensation'];
+
+  function renderTier(actionKey) {
+    const d = tierData[actionKey];
+    $('#tier-num').textContent = d.tier;
+    $('#tier-name').textContent = d.name;
+    $('#tier-desc').textContent = d.desc;
+    const has = new Set(d.records);
+    $('#tier-records').innerHTML = allRecords.map(r =>
+      `<div class="tier-record ${has.has(r)?'on':'off'}"><span class="tr-icon"></span><span class="tier-record-name">${recordLabels[r]}</span></div>`
+    ).join('');
+  }
+  $('#tier-action').addEventListener('change', e => renderTier(e.target.value));
+  renderTier('book_hotel');
+
+  // ===================== SIM 2c: Capability graph =====================
+  const graphData = {
+    agent: {
+      eyebrow: 'AgentRole',
+      title: 'hotel_booking_agent',
+      desc: 'An identity with authority scope. AgentRoles are granted skills, and through those skills, tools and command types. The agent loop runs inside this role; everything it does is checked against the role\'s declared authority.',
+      code: '@agent_role(\n  name="hotel_booking_agent",\n  grants=[hotel_booking_skill],\n  memory_scope="user:{user_id}",\n)'
+    },
+    skill: {
+      eyebrow: 'Skill',
+      title: 'hotel_booking_skill@1.4.2',
+      desc: 'A versioned bundle of tools, policies, and memory schemas. Skills are how Concord packages authority — granting a skill is granting everything inside it. Versioned so a role can pin to a known-good capability set.',
+      code: '@skill(\n  name="hotel_booking_skill",\n  version="1.4.2",\n  tools=[book_hotel, search_hotels],\n  memory_scope="user:{user_id}",\n)'
+    },
+    tool: {
+      eyebrow: 'Tool',
+      title: 'book_hotel',
+      desc: 'A typed function exposed to the agent\'s reasoning. Tools call into command types, not directly into connectors — so an agent can never bypass policy by calling a tool.',
+      code: '@tool(skill=hotel_booking_skill)\ndef book_hotel(\n  hotel_id: str,\n  checkin: date,\n  checkout: date,\n) -> CommandHandle: ...'
+    },
+    cmd: {
+      eyebrow: 'CommandType',
+      title: 'book_hotel',
+      desc: 'The named action contract. Declares the payload schema, the policy bundle, the approval type, the artifact it produces, and the connector operations it may invoke. This is the row in commands table.',
+      code: '@command_type(\n  name="book_hotel",\n  policy=hotel_booking_policy,\n  approval=hotel_booking_approval,\n  produces=[reservation_confirmation],\n  invokes=[hotel_booking.book_hotel],\n  cancellation_mode="compensate_then_stop",\n)'
+    },
+    policy: {
+      eyebrow: 'PolicyBundle',
+      title: 'hotel_booking_policy',
+      desc: 'A pure function that takes the command and context and returns one of: allow, deny, require_approval, require_more_input, route_async. Bundles compose — multiple bundles combine with most-restrictive-wins.',
+      code: 'def hotel_booking_policy(cmd, ctx) -> Decision:\n  if cmd.payload.total_cost > 500:\n    return require_approval("cost_threshold_500")\n  if ctx.user.region == "EU" and not gdpr_consent(cmd):\n    return deny("missing_gdpr_consent")\n  return allow()'
+    },
+    artifact: {
+      eyebrow: 'ArtifactSchema',
+      title: 'reservation_confirmation',
+      desc: 'The durable output the command produces. Typed and versioned. Artifacts are content-addressed and immutable; updates create a new version with a supersedes link.',
+      code: '@artifact_schema(\n  name="reservation_confirmation",\n  version="1",\n  fields={\n    "reservation_id": str,\n    "hotel_id": str,\n    "checkin": date,\n    "checkout": date,\n    "total_paid": Decimal,\n  },\n)'
+    },
+    connector: {
+      eyebrow: 'ConnectorOperation',
+      title: 'hotel_booking.book_hotel',
+      desc: 'The governed call to an external system. Wraps the actual HTTP client. Concord enforces that all external writes go through a connector operation — agents cannot call requests.post directly.',
+      code: '@connector_op(\n  connector="hotel_booking",\n  name="book_hotel",\n  contract=hotel_booking_contract,\n)\ndef book_hotel(req: BookHotelRequest) -> BookHotelResponse: ...'
+    },
+    contract: {
+      eyebrow: 'ConnectorContract',
+      title: 'idempotency · retry · compensate',
+      desc: 'The promises a connector operation makes. Declares the idempotency key template, the retryable error classes, the compensation operation, and the reconciliation strategy.',
+      code: '@connector_contract(\n  idempotency_key_template="book_hotel:{booking_draft_id}",\n  retryable=[transient_connector_error, rate_limited],\n  compensation=hotel_booking.cancel_reservation,\n  reconciliation=match_by_external_id,\n)'
+    }
+  };
+
+  function renderGraphPanel(key) {
+    const d = graphData[key];
+    if (!d) return;
+    $('#graph-panel').innerHTML = `
+      <div class="graph-panel-eyebrow">${d.eyebrow}</div>
+      <div class="graph-panel-title">${d.title}</div>
+      <p class="graph-panel-desc">${d.desc}</p>
+      <pre><code>${d.code}</code></pre>
+    `;
+  }
+
+  function setActiveNode(key) {
+    $$('.graph-node').forEach(n => n.classList.toggle('active', n.dataset.node === key));
+  }
+
+  $$('.graph-node').forEach(n => {
+    n.addEventListener('click', () => {
+      setActiveNode(n.dataset.node);
+      renderGraphPanel(n.dataset.node);
+    });
+  });
+
+  // Trace animation
+  const tracePath = ['agent', 'skill', 'tool', 'cmd', 'connector', 'contract'];
+  const traceEdges = ['agent-skill', 'skill-tool', 'tool-cmd', 'cmd-connector', 'connector-contract'];
+
+  function clearTrace() {
+    $$('.graph-node').forEach(n => n.classList.remove('traced'));
+    $$('.graph-edge').forEach(e => e.classList.remove('traced'));
+  }
+
+  $('#trace-btn').addEventListener('click', async () => {
+    clearTrace();
+    setActiveNode(null);
+    $('#trace-btn').disabled = true;
+    for (let i = 0; i < tracePath.length; i++) {
+      const node = document.querySelector(`.graph-node[data-node="${tracePath[i]}"]`);
+      if (node) node.classList.add('traced');
+      if (i > 0) {
+        const edge = document.querySelector(`.graph-edge[data-edge="${traceEdges[i-1]}"]`);
+        if (edge) edge.classList.add('traced');
+      }
+      renderGraphPanel(tracePath[i]);
+      await new Promise(r => setTimeout(r, 650));
+    }
+    $('#trace-btn').disabled = false;
+  });
+
+  $('#reset-graph-btn').addEventListener('click', () => {
+    clearTrace();
+    setActiveNode(null);
+    $('#graph-panel').innerHTML = `
+      <div class="graph-panel-eyebrow">Click a node</div>
+      <div class="graph-panel-title">Domain Registry</div>
+      <p class="graph-panel-desc">The Domain Registry is the compiled graph of an app's governed capabilities. It's not a database — it's a build artifact, validated at startup. Click any node in the graph to see what kind of declaration produced it.</p>
+    `;
+  });
+})();
+</script>
+
+</body>
+</html>
